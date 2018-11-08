@@ -1,3 +1,5 @@
 # Rshiny
-You can run it directly at you RStudio with
+You can run it directly at you RStudio
+~~~
 runGitHub("Rshiny", "gc5k")
+~~~
