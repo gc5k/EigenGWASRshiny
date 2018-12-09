@@ -69,7 +69,7 @@ ui <- fluidPage(
                 "Integer:",
                 min = 1,
                 max = 5,
-                value = 3,
+                value = 1,
                 step = 1
               ),
               sliderInput(
@@ -101,7 +101,7 @@ ui <- fluidPage(
                 "Integer:",
                 min = 1,
                 max = 5,
-                value = 3,
+                value = 1,
                 step = 1
               ),
               actionButton('EigenGWASPlot_save', 'Download')
@@ -156,21 +156,25 @@ server <- function(input, output) {
 
     #miamiPlot-plotOutput
     output$miami <- renderPlot({
-      miamiPlot(
-        froot,
-        input$miamiPlot_integer,
-        Log1 = TRUE,
-        Log2 = F,
-        cex = input$miamiPlot_cex,
-        pch = input$miamiPlot_pch,
-        bty = "l",
-        genomewideline = input$threshhold
-      )
+      if(input$miamiPlot_integer <= input$espace) {
+        miamiPlot(
+          froot,
+          input$miamiPlot_integer,
+          Log1 = TRUE,
+          Log2 = F,
+          cex = input$miamiPlot_cex,
+          pch = input$miamiPlot_pch,
+          bty = "l",
+          genomewideline = input$threshhold
+        )
+      }
     })
 
     #EigenGWASPlot-plotOutput
     output$eigengwas <- renderPlot({
-      EigenGWASPlot(froot, input$EigenGWASPlot_integer)
+      if (input$EigenGWASPlot_integer <= input$espace) {
+        EigenGWASPlot(froot, input$EigenGWASPlot_integer)
+      }
     })
   })
   
