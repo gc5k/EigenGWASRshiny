@@ -1,0 +1,13 @@
+name: eigengwas
+title: EigenGWAS
+username:
+account: gc5k
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 604363
+bundleId: 1750539
+url: https://gc5k.shinyapps.io/eigengwas/
+when: 1544343385.61917
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: data/arab.bed|data/arab.bim|data/arab.fam

@@ -11,7 +11,7 @@ ui <- fluidPage(
   #Gobal parameters
   navbarMenu(
     title = "",
-    fileInput('file_input', 'Genotype files', multiple = TRUE),
+    fileInput('file_input', 'Genotype files', multiple = TRUE, accept = c("bed", "fam", "bim")),
     numericInput(
       'espace',
       'Eigen space',
@@ -122,11 +122,27 @@ ui <- fluidPage(
 server <- function(input, output) {
   #Plot on the web
   observeEvent(input$run, {
-    cat("Showing", input$file_input$name)
-    fn = input$file_input$name
-    froot = substr(fn, 1, nchar(fn) - 4)
+    cat(getwd())
+    cat("\nShowing", input$file_input$name, " ", input$file_input$datapath)
+    idx=0
+    if (length(input$file_input$name)!=3) {
+      return()
+    } else {
+      idx=grep(".bed$", input$file_input$datapath)
+      if ( length(idx)==1 ) {
+        rt=substr(input$file_input$datapath[idx], 1, nchar(input$file_input$datapath[idx])-4)
+      }
+      for (i in 1:3) {
+        if (i != idx) {
+          f1 = input$file_input$datapath[i]
+          tl = substr(f1, nchar(f1)-2, nchar(f1))
+          file.symlink(f1, paste0(rt, ".", tl))
+        }
+      }
+    }
+    froot = substr(input$file_input$datapath[idx], 1, nchar(input$file_input$datapath[idx])-4)
     RunEigenGWAS(froot, input$espace, inbred = ifelse(input$bred == 'inbred', T, F))
-
+    cat("\ndone EigenGWAS")
     #GRM-plotOutput
     output$grm <- renderPlot({
       layout(matrix(1:2, 1, 2))
@@ -141,7 +157,7 @@ server <- function(input, output) {
     #miamiPlot-plotOutput
     output$miami <- renderPlot({
       miamiPlot(
-        FN,
+        froot,
         input$miamiPlot_integer,
         Log1 = TRUE,
         Log2 = F,
