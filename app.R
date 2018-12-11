@@ -3,7 +3,7 @@
 
 # Source helpers ----
 source('helper.R')
-
+options(shiny.maxRequestSize=200*1024^2, shiny.launch.browser=T)
 # Define UI for EigenGWAS Application
 ui <- fluidPage(
   #Title
@@ -12,7 +12,7 @@ ui <- fluidPage(
   navbarMenu(
     title = "",
     fileInput('file_input', 
-              '3 files (*.bim, *.bed, *.fam)', 
+              '3 files (*.bim, *.bed, *.fam) [less than 200 MB]', 
               multiple = TRUE, 
               accept = c("bed", "fam", "bim")),
     numericInput(
@@ -32,7 +32,7 @@ ui <- fluidPage(
     ),
     numericInput(
       'threshhold',
-      'p-value threshhold',
+      'p-value threshhold [-log10 scale]',
       value = 5.00,
       min = 1,
       max = 10,
