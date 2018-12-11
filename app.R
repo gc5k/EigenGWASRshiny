@@ -11,11 +11,14 @@ ui <- fluidPage(
   #Gobal parameters
   navbarMenu(
     title = "",
-    fileInput('file_input', 'Genotype files', multiple = TRUE, accept = c("bed", "fam", "bim")),
+    fileInput('file_input', 
+              '3 files (*.bim, *.bed, *.fam)', 
+              multiple = TRUE, 
+              accept = c("bed", "fam", "bim")),
     numericInput(
       'espace',
       'Eigen space',
-      value = 5,
+      value = 2,
       min = 1,
       max = 10,
       step = 1
@@ -23,8 +26,8 @@ ui <- fluidPage(
     radioButtons(
       'bred',
       'Population type',
-      choices = list('Inbred' = 'inbred', 'Outbred' = 'outbred'),
-      selected = 'inbred',
+      choices = list('Outbred' = 'outbred', 'Inbred' = 'inbred'),
+      selected = 'outbred',
       inline = T
     ),
     numericInput(
@@ -124,8 +127,21 @@ server <- function(input, output) {
   observeEvent(input$run, {
     cat(getwd())
     cat("\nShowing", input$file_input$name, " ", input$file_input$datapath)
+    fCnt=0
+    if(length(which(grepl("*.bed", input$file_input$name)))  != 1) {
+      cat("\n No bed file")
+      fCnt=fCnt+1
+    }
+    if(length(which(grepl("*.bim", input$file_input$name)))  != 1) {
+      cat("\n No bim file")
+      fCnt=fCnt+1
+    }
+    if(length(which(grepl("*.fam", input$file_input$name)))  != 1) {
+      cat("\n No fam file")
+      fCnt=fCnt+1
+    }
     idx=0
-    if (length(input$file_input$name)!=3) {
+    if (fCnt>0) {
       return()
     } else {
       idx=grep(".bed$", input$file_input$datapath)
