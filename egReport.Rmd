@@ -1,5 +1,5 @@
 ---
-title: ""
+title: "EigenGWAS"
 author: "Guo-Bo Chen"
 date: "`r Sys.Date()`"
 output:

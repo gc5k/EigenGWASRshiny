@@ -1,6 +1,6 @@
 # Load packages ----
-#library(shiny)
-
+library(shiny)
+#library(shinyjs)
 # Source helpers ----
 source('helper.R')
 options(shiny.maxRequestSize=200*1024^2, shiny.launch.browser=T)
@@ -59,7 +59,7 @@ ui <- fluidPage(
   fluidRow(
     column(4,
       actionButton('run', 
-        'EigenGWAS, Go!', icon("cog", lib = "glyphicon")
+        'EigenGWAS, Go!'
       )
     )
   ),
@@ -115,6 +115,7 @@ ui <- fluidPage(
 # Define server logic required to draw a histogram
 server <- function(input, output) {
   #Plot on the web
+
   observeEvent(input$run, {
 
     FileLoad=0
@@ -265,11 +266,7 @@ server <- function(input, output) {
       })
     })
     
-    insertUI(
-      where = "afterEnd",
-      ui = textInput(paste0("txt", input$add),
-                     "Insert some text")
-    )
+    
   })
 
   observeEvent(input$EigenGWASPlot_espace, {
@@ -346,6 +343,227 @@ server <- function(input, output) {
         )
       }
   )
+  #popup
+  #GRM-   ImageSave-information
+  observeEvent(input$GRM_save, {
+    showModal(
+      modalDialog(
+        title = 'Save',
+        textInput('GRM_filenameInput', label = 'Input Your Filename please', value = ''),
+        checkboxGroupInput(
+          'GRM_savetype',
+          label = 'Choose your filetype',
+          choices = list(
+            '.pdf' = 1,
+            '.jpeg' = 2,
+            '.bmp' = 3,
+            '.png' = 4
+          ),
+          selected = 4
+        ),
+        actionButton('GRM_savebutton', 'Save'),
+        easyClose = TRUE
+      )
+    )
+  })
+  #GRM-   ImageSave-savebutton
+  observeEvent(input$GRM_savebutton, {
+    #.pdf file
+    if ("1" %in% input$GRM_savetype) {
+      GRM_SaveAsPdf(input$GRM_filenameInput)
+    }
+    
+    #.jpeg file
+    if ("2" %in% input$GRM_savetype) {
+      GRM_SaveAsJpeg(input$GRM_filenameInput)
+    }
+    
+    #.bmp file
+    if ("3" %in% input$GRM_savetype) {
+      GRM_SaveAsBmp(input$GRM_filenameInput)
+    }
+    
+    #.png file
+    if ("4" %in% input$GRM_savetype) {
+      GRM_SaveAsPng(input$GRM_filenameInput)
+    }
+  })
+  
+  #Eigenvalue-   ImageSave-information
+  observeEvent(input$Eigenvalue_save, {
+    showModal(
+      modalDialog(
+        title = 'Save',
+        textInput(
+          'Eigenvalue_filenameInput',
+          label = 'Input Your Filename please',
+          value = ''
+        ),
+        checkboxGroupInput(
+          'Eigenvalue_savetype',
+          label = 'Choose your filetype',
+          choices = list(
+            '.pdf' = 1,
+            '.jpeg' = 2,
+            '.bmp' = 3,
+            '.png' = 4
+          ),
+          selected = 4
+        ),
+        actionButton('Eigenvalue_savebutton', 'Save'),
+        easyClose = TRUE
+      )
+    )
+  })
+  #Eigenvalue-   ImageSave-savebutton
+  observeEvent(input$Eigenvalue_savebutton, {
+    #.pdf file
+    if ("1" %in% input$Eigenvalue_savetype) {
+      Eigenvalue_SaveAsPdf(input$Eigenvalue_filenameInput)
+    }
+    
+    #.jpeg file
+    if ("2" %in% input$Eigenvalue_savetype) {
+      Eigenvalue_SaveAsJpeg(input$Eigenvalue_filenameInput)
+    }
+    
+    #.bmp file
+    if ("3" %in% input$Eigenvalue_savetype) {
+      Eigenvalue_SaveAsBmp(input$Eigenvalue_filenameInput)
+    }
+    
+    #.png file
+    if ("4" %in% input$Eigenvalue_savetype) {
+      Eigenvalue_SaveAsPng(input$Eigenvalue_filenameInput)
+    }
+  })
+  
+  #miamiPlot-   ImageSave-information
+  observeEvent(input$miamiPlot_save, {
+    showModal(
+      modalDialog(
+        title = 'Save',
+        textInput(
+          'miamiPlot_filenameInput',
+          label = 'Input Your Filename please',
+          value = ''
+        ),
+        checkboxGroupInput(
+          'miamiPlot_savetype',
+          label = 'Choose your filetype',
+          choices = list(
+            '.pdf' = 1,
+            '.jpeg' = 2,
+            '.bmp' = 3,
+            '.png' = 4
+          ),
+          selected = 4
+        ),
+        actionButton('miamiPlot_savebutton', 'Save'),
+        easyClose = TRUE
+      )
+    )
+  })
+  #miamiPlot-   ImageSave-savebutton
+  observeEvent(input$miamiPlot_savebutton, {
+    #.pdf file
+    if ("1" %in% input$miamiPlot_savetype) {
+      miamiPlot_SaveAsPdf(
+        input$miamiPlot_filenameInput,
+        input$miamiPlot_integer,
+        input$miamiPlot_cex,
+        input$miamiPlot_pch,
+        input$threshhold
+      )
+    }
+    
+    #.jpeg file
+    if ("2" %in% input$miamiPlot_savetype) {
+      miamiPlot_SaveAsJpeg(
+        input$miamiPlot_filenameInput,
+        input$miamiPlot_integer,
+        input$miamiPlot_cex,
+        input$miamiPlot_pch,
+        input$threshhold
+      )
+    }
+    
+    #.bmp file
+    if ("3" %in% input$miamiPlot_savetype) {
+      miamiPlot_SaveAsBmp(
+        input$miamiPlot_filenameInput,
+        input$miamiPlot_integer,
+        input$miamiPlot_cex,
+        input$miamiPlot_pch,
+        input$threshhold
+      )
+    }
+    
+    #.png file
+    if ("4" %in% input$miamiPlot_savetype) {
+      miamiPlot_SaveAsPng(
+        input$miamiPlot_filenameInput,
+        input$miamiPlot_integer,
+        input$miamiPlot_cex,
+        input$miamiPlot_pch,
+        input$threshhold
+      )
+    }
+  })
+  
+  
+  #EigenGWASPlot-   ImageSave-information
+  observeEvent(input$EigenGWASPlot_save, {
+    showModal(
+      modalDialog(
+        title = 'Save',
+        textInput(
+          'EigenGWASPlot_filenameInput',
+          label = 'Input Your Filename please',
+          value = ''
+        ),
+        checkboxGroupInput(
+          'EigenGWASPlot_savetype',
+          label = 'Choose your filetype',
+          choices = list(
+            '.pdf' = 1,
+            '.jpeg' = 2,
+            '.bmp' = 3,
+            '.png' = 4
+          ),
+          selected = 4
+        ),
+        actionButton('EigenGWASPlot_savebutton', 'Save'),
+        easyClose = TRUE
+      )
+    )
+  })
+  #EigenGWASPlot-   ImageSave-savebutton
+  observeEvent(input$EigenGWASPlot_savebutton, {
+    #.pdf file
+    if ("1" %in% input$EigenGWASPlot_savetype) {
+      EigenGWASPlot_SaveAsPdf(input$EigenGWASPlot_filenameInput,
+                              input$EigenGWASPlot_espace)
+    }
+    
+    #.jpeg file
+    if ("2" %in% input$EigenGWASPlot_savetype) {
+      EigenGWASPlot_SaveAsJpeg(input$EigenGWASPlot_filenameInput,
+                               input$EigenGWASPlot_espace)
+    }
+    
+    #.bmp file
+    if ("3" %in% input$EigenGWASPlot_savetype) {
+      EigenGWASPlot_SaveAsBmp(input$EigenGWASPlot_filenameInput,
+                              input$EigenGWASPlot_espace)
+    }
+    
+    #.png file
+    if ("4" %in% input$EigenGWASPlot_savetype) {
+      EigenGWASPlot_SaveAsPng(input$EigenGWASPlot_filenameInput,
+                              input$EigenGWASPlot_espace)
+    }
+  })
 }
 
 # Run the application
