@@ -126,10 +126,12 @@ Evev=read.table(paste0(params$froot, ".eigenval"), as.is = T)
 GC=array(0, dim=PC)
 for(i in 1:PC) {
   eg = read.table(paste0(params$froot, ".", i, ".assoc.linear"), as.is = T, header = T)
-  GC[i] = qchisq(median(eg$P), 1, lower.tail = F)/qchisq(0.5, 1)
+  GC[i] = qchisq(median(eg$P, na.rm = T), 1, lower.tail = F)/qchisq(0.5, 1)
 }
 
 egc=matrix(c(Evev[1:PC,1]/params$sc, GC), PC, 2, byrow = F)
+library(knitr)
+kable(   as.data.frame(format(egc, digit=3)), caption="Eigenvalue vs Genomic inflation factor", col.names = c("Eigenvalue", expression(paste(lambda[GC]))))
 rownames(egc)=seq(1, PC)
 barplot(t(egc), beside = T, border = F, xlab="eSpace", ylim=c(0,max(egc)+2))
         abline(h=1, lty=2, lwd=2)
@@ -146,6 +148,7 @@ froot = params$froot
 for(i in 1:PC) {
   layout(matrix(1:2, 1, 2))
   EigenRes=read.table(paste0(froot, ".", i, ".assoc.linear"), as.is = T, header = T)
+  EigenRes=EigenRes[which(!is.na(EigenRes$P)),]
   EigenRes$Praw=EigenRes$P
   gc=qchisq(median(EigenRes$P), 1, lower.tail = F)/qchisq(0.5, 1, lower.tail = F)
   EigenRes$P=pchisq(qchisq(EigenRes$Praw, 1, lower.tail = F)/gc, 1, lower.tail = F)
@@ -160,3 +163,6 @@ for(i in 1:PC) {
 }
 
 ```
+
+## 6 Citation
+[Chen, G.B. et al, EigenGWAS: finding loci under selection through genome-wide association studies of eigenvectors in structured populations, Heredity, 2016, 117:51-61.](https://www.nature.com/articles/hdy201625)
