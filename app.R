@@ -13,7 +13,7 @@ if(length(grep("linux",sessionInfo()$platform, ignore.case = TRUE))>0) {
   print("apple")
   plink2 = "./plink_mac"
 
-  system("git rev-list head --max-count 1 > gitTag.txt")
+#  system("git rev-list head --max-count 1 > gitTag.txt")
 } else {
   print("windows")
   plink2 = "./plink.exe"
