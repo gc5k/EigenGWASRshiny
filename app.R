@@ -354,7 +354,7 @@ server <- function(input, output) {
       
       
       # Set up parameters to pass to Rmd document
-      params <- list(froot = substr(input$file_input$datapath[1], 1, nchar(input$file_input$datapath[1])-4),
+      params <- list(froot = frt,
                      espace = input$espace, 
                      sc = ifelse(input$bred == 'inbred', 2, 1),
                      pcut = as.numeric(input$threshold))
