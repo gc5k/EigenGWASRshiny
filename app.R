@@ -55,7 +55,7 @@ ui <- fluidPage(
     column(4,
       sliderInput('maf_cut',
         'MAF threshold',
-        value = 0, min = 0, max = 0.4, step = 0.05
+        value = 0.01, min = 0, max = 0.4, step = 0.05
       )
     ),
     column(6,
@@ -91,42 +91,41 @@ ui <- fluidPage(
             plotOutput('freq')
           ),
 
+          tabPanel('GRM',
+                   plotOutput('grm')
+          ),
+
           tabPanel("PCA",
             sidebarPanel(
               sliderInput("x", "xLab", 1, 8, 1, step = 1),
               sliderInput("y", "yLab", 1, 8, 2, step = 1)
             ),
-
             mainPanel(
               plotOutput("PCA")
-              )
-            ),
-
-            tabPanel('GRM',
-              plotOutput('grm')
-            ),
-
-            tabPanel('Eigenvalue',
-              plotOutput('eigenvalue')
-            ),
-
-            tabPanel('EigenGWAS',
-              tabPanel('EigenGWAS visualization',
-                sidebarPanel(
-                  sliderInput('EigenGWASPlot_espace',
-                    "eSpace", min = 1, max = 5, 
-                    value = c(1,1), dragRange=TRUE, step = 1),
-                  selectInput('threshold',
-                    'p-value cutoff',
-                    choices = c(0.1, 0.05, 0.01, 0.005, 0.001), 
-                    selected = 0.05
-                  )
-                ),
-                mainPanel(plotOutput('eigengwas'))
-              )
             )
+          ),
+
+          tabPanel('Eigenvalue',
+            plotOutput('eigenvalue')
+          ),
+
+          tabPanel('EigenGWAS',
+            tabPanel('EigenGWAS visualization',
+              sidebarPanel(
+                sliderInput('EigenGWASPlot_espace',
+                  "eSpace", min = 1, max = 5, 
+                  value = c(1,1), dragRange=TRUE, step = 1),
+                selectInput('threshold',
+                  'p-value cutoff',
+                  choices = c(0.1, 0.05, 0.01, 0.005, 0.001), 
+                  selected = 0.05
+                )
+              ),
+              mainPanel(plotOutput('eigengwas'))
+              )
           )
         )
+      )
     )
   )
 )
