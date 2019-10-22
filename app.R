@@ -1,22 +1,27 @@
 # Load packages ----
 conf=read.table("EigenGWAS.conf", as.is = T)
+
 library(shiny)
 #library(shinyjs)
 # Source helpers ----
 source('helper.R')
 
+unzip = "unzip -o -q plink.zip"
 plink2 = "./plink_mac"
 if(length(grep("linux",sessionInfo()$platform, ignore.case = TRUE))>0) {
   print("linux")
+  system(paste0(unzip," plink_linux"))
   plink2 = "./plink_linux"
 } else if(length(grep("apple",sessionInfo()$platform, ignore.case = TRUE))>0) {
   print("apple")
+  system(paste0(unzip," plink_mac"))
   plink2 = "./plink_mac"
 
 #  system("git rev-list head --max-count 1 > gitTag.txt")
 } else {
   print("windows")
-  plink2 = "./plink.exe"
+  system("7z.exe x plink_win.7z e plink_win.exe >nul")
+  plink2 = "plink_win.exe"
 }
 
 options(shiny.maxRequestSize=conf[1,2]*1024^2, shiny.launch.browser=T)
@@ -24,114 +29,164 @@ gTag=read.table("gitTag.txt")
 
 # Define UI for EigenGWAS Application
 ui <- fluidPage(
-  #Title
-  titlePanel("EigenGWAS"),
-  h6(paste("Git version:", gTag[1,1])),
-  hr(),
-  #Gobal parameters
-  fluidRow(
-    column(6,
-      fileInput('file_input', 
-        paste0('3 source files (.bim, .bed, .fam) [< ', conf[1,2],' MB]'), 
-        multiple = TRUE,
-        accept = c("bed", "fam", "bim")
-      )
-    ),
-    column(6,
-           numericInput('autosome', "Autosome number", value=22)
-           )
-    ),
-
-  hr(),
-  fluidRow(
-    column(2,
-      radioButtons('bred',
-        'Population type',
-        choices = list('Outbred' = 'outbred', 'Inbred' = 'inbred'),
-          selected = 'outbred',
-          inline = T
-        )
-    ),
-    column(4,
-      sliderInput('maf_cut',
-        'MAF threshold',
-        value = 0.01, min = 0, max = 0.4, step = 0.05
-      )
-    ),
-    column(6,
-      sliderInput('espace',
-        'Eigen space',
-        value = 2, min = 1, max = 5, step = 1
-      )
-    )
-  ),
-
-  fluidRow(
-    column(4,
-      actionButton('run', 
-        'EigenGWAS, Go!')
-    )
-  ),
-  
-  hr(),
-  #TabPanels
-  fluidRow(
-    column(3,
-      downloadButton('eReport', 
-        'Generate eReport'
-      )
-    )
-  ),
-  fluidRow(
-    column(12, 
-      mainPanel(
-        tabsetPanel(type = 'tabs',
-                         
-          tabPanel('MAF',
-            plotOutput('freq')
-          ),
-
-          tabPanel('GRM',
-                   plotOutput('grm')
-          ),
-
-          tabPanel("PCA",
-            sidebarPanel(
-              sliderInput("x", "xLab", 1, 8, 1, step = 1),
-              sliderInput("y", "yLab", 1, 8, 2, step = 1)
-            ),
-            mainPanel(
-              plotOutput("PCA")
-            )
-          ),
-
-          tabPanel('Eigenvalue',
-            plotOutput('eigenvalue')
-          ),
-
-          tabPanel('EigenGWAS',
-            tabPanel('EigenGWAS visualization',
-              sidebarPanel(
-                sliderInput('EigenGWASPlot_espace',
-                  "eSpace", min = 1, max = 5, 
-                  value = c(1,1), dragRange=TRUE, step = 1),
-                selectInput('threshold',
-                  'p-value cutoff',
-                  choices = c(0.1, 0.05, 0.01, 0.005, 0.001), 
-                  selected = 0.05
+	theme = "style.css",
+	div(style = "padding: 1px 0px; width: '100%'",
+		titlePanel(
+			title = "",
+			windowTitle = "EigenGWAS"
+			)
+		),
+	navbarPage(
+		title = div(
+			span(
+				#img(src = "logo.png"),
+				strong("EigenGWAS"),
+				style = "position: relative; top: 50%; transform: translateY(-50%);"
+				)
+			),
+    id = "inNavbar",
+		tabPanel(
+			title = "Data Input",
+      value = "datainput",
+			fluidRow(
+				column(
+					6,
+					fileInput(
+						"file_input",
+						paste0('3 source files (.bim, .bed, .fam) [< ', conf[1,2],' MB]'),
+						multiple = TRUE,
+						accept = c("bed", "fam", "bim")
+						)
+					),
+				column(
+					6,
+					numericInput('autosome', "Autosome number", value=22)
+					)
+				),
+			hr(),
+			fluidRow(
+				column(
+					2,
+					radioButtons(
+						'bred',
+						'Population type',
+						choices = list('Outbred' = 'outbred', 'Inbred' = 'inbred'),
+          				selected = 'outbred',
+          				inline = T
+						)
+					),
+				column(
+					4,
+					sliderInput(
+						'maf_cut',
+        				'MAF threshold',
+        				value = 0.01, min = 0, max = 0.4, step = 0.05
+					)
+				),
+				column(
+					6,
+					sliderInput(
+						'espace',
+						'Eigen space',
+						value = 2, min = 1, max = 5, step = 1
+						)
+					)
+				),
+			fluidRow(
+				column(
+					4,
+					actionButton(
+						'run',
+						'EigenGWAS, Go!'
+						)
+					)
+				)
+			),
+		tabPanel(
+			title = "Visualization",
+      value = "visualization",
+			fluidRow(
+    			column(12, 
+      				mainPanel(
+        				tabsetPanel(
+        					type = 'tabs',
+          					tabPanel(
+          						'MAF',
+            					plotOutput('freq')
+          						),
+          					tabPanel(
+          						'GRM',
+                   		plotOutput('grm')
+								      ),
+          					tabPanel(
+          						"PCA",
+            					sidebarPanel(
+              						sliderInput("x", "xLab", 1, 8, 1, step = 1),
+              						sliderInput("y", "yLab", 1, 8, 2, step = 1)
+            						),
+            				mainPanel(
+              					plotOutput("PCA")
+            					)
+          					),          					
+				            tabPanel(
+				            	'Eigenvalue',
+           						plotOutput('eigenvalue')
+          					),
+			          		tabPanel(
+			          			'EigenGWAS',
+            					tabPanel(
+            						'EigenGWAS visualization',
+              						sidebarPanel(
+                						sliderInput(
+                							'EigenGWASPlot_espace',
+                  							"eSpace", 
+                  							min = 1, max = 5, value = c(1,1), dragRange=TRUE, step = 1),
+                						selectInput(
+                							'threshold',
+                  							'p-value cutoff',
+                 							choices = c(0.1, 0.05, 0.01, 0.005, 0.001), 
+                  							selected = 0.05                  							
+                							)
+              						),
+              						mainPanel(plotOutput('eigengwas'))
+              					)
+          					)
+        				)
+      				)
+    			)
+  			),
+      hr(),
+      fluidRow(
+        column(
+          12,
+          mainPanel(
+            column(4,
+              downloadButton(
+                'eReport', 
+                'Generate eReport'
                 )
               ),
-              mainPanel(plotOutput('eigengwas'))
+            column(
+              6,
+              DT::dataTableOutput('topsnp')
               )
+            )
           )
         )
-      )
-    )
-  )
+		),
+		tabPanel(
+			title = "About",
+      value = "about",
+			tags$h3("Citation"),
+			tags$p(HTML("<a href=\"https://www.nature.com/articles/hdy201625\">Chen, G.B. et al, EigenGWAS: finding loci under selection through genome-wide association studies of eigenvectors in structured populations, Heredity, 2016, 117:51-61.</a>")),
+      tags$br(),
+      tags$p(HTML(paste("Git version:", gTag[1,1])))
+		)
+	)
 )
 
 # Define server logic required to draw a histogram
-server <- function(input, output) {
+server <- function(input, output, session) {
   #Plot on the web
   currentFile <- reactive( {
     print("Reading files...")
@@ -188,6 +243,7 @@ server <- function(input, output) {
   })
 
   observeEvent(input$run, {
+    updateTabsetPanel(session, "inNavbar", selected = "visualization")
     ##plink
     withProgress(message="EigenGWAS:", value=0, {
       PC = input$espace
@@ -303,7 +359,7 @@ server <- function(input, output) {
         gc=qchisq(median(EigenRes$P, na.rm = T), 1, lower.tail = F)/qchisq(0.5, 1, lower.tail = F)
         print(paste0("GC = ", format(gc, digits = 4)))
         EigenRes$P=pchisq(qchisq(EigenRes$Praw, 1, lower.tail = F)/gc, 1, lower.tail = F)
-        manhattan(EigenRes, genomewideline = -log10(as.numeric(input$threshold)/nrow(EigenRes)), title=paste("eSpace ", pcIdx), pch=16, cex=0.3, bty='n')
+        manhattan(EigenRes, genomewideline = -log10(as.numeric(input$threshold)/nrow(EigenRes)), title=paste("eSpace ", pcIdx), annotatePvalue = TRUE, pch=16, cex=0.3, bty='n')
         
         #QQplot
         chiseq=qchisq(seq(1/nrow(EigenRes), 1-1/nrow(EigenRes), length.out = nrow(EigenRes)), 1)
@@ -311,6 +367,19 @@ server <- function(input, output) {
         points(sort(chiseq), sort(qchisq(EigenRes$P, 1, lower.tail = F)), col="black", pch=16, cex=0.5)
         legend("topleft", legend = c("Raw", "GC correction"), pch=16, cex=0.5, col=c("grey", "black"), bty='n')
         abline(a=0, b=1, col="red", lty=2)
+
+        output$topsnp <- DT::renderDataTable(
+        DT::datatable(
+          EigenRes[order(EigenRes$P),][c(1:5),c(1:3,9,10)],
+          caption = htmltools::tags$caption(
+            style = 'caption-side:bottom;text-align:center;','Table: ',htmltools::em(paste0('Top hits in EigenGWAS, eSpace',pcIdx))),
+          options = list(pageLength = 5, 
+            searching = FALSE, 
+            dom = ''
+            ),
+          rownames = FALSE
+          )
+        )
       })
     })
   })
@@ -368,3 +437,5 @@ server <- function(input, output) {
 
 # Run the application
 shinyApp(ui = ui, server = server)
+
+
