@@ -1,7 +1,8 @@
 # Rshiny
-You can run it directly at you RStudio, if you have shiny package installed.
+You can run EigenGWAS directly at you RStudio/R, if you have shiny and DT packages installed.
 ~~~
 library(shiny)
+library(DT)
 runGitHub("EigenGWASRshiny", "gc5k")
 ~~~
-So far, it supports Mac and Linux only.
+All platforms support.
