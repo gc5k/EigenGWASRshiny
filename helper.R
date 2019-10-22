@@ -56,7 +56,7 @@ RunPlink <- function(dat, PC, inbred=T, plink2) {
 }
 #FileSave functions
 
-manhattan <- function(dataframe, colors=c("gray10", "gray50"), ymax="max", limitchromosomes=NULL, suggestiveline=-log10(1e-5), genomewideline=NULL, title="", annotate=NULL, ...) {
+manhattan <- function(dataframe, colors=c("gray10", "gray50"), ymax="max", limitchromosomes=NULL, suggestiveline=-log10(1e-5), genomewideline=NULL, title="", annotate=NULL, annotatePvalue=NULL, ...) {
 
   d=dataframe
   if (!("CHR" %in% names(d) & "BP" %in% names(d) & "P" %in% names(d))) stop("Make sure your data frame contains columns CHR, BP, and P")
@@ -111,6 +111,30 @@ manhattan <- function(dataframe, colors=c("gray10", "gray50"), ymax="max", limit
   } else {
     abline(h=-log10(0.05/nrow(d)), col="gray")    
   }
+  if (!is.null(annotatePvalue)){
+    topHits = d[order(d$P),][c(1:5),]
+    textxy(topHits$pos, -log10(topHits$P), offset = 0.625, labs = topHits$SNP, cex = 0.45)
+  }
+}
+# add text to point in graph
+textxy <- function (X, Y, labs, m = c(0, 0), cex = 0.5, offset = 0.8, ...) 
+{
+    posXposY <- ((X >= m[1]) & ((Y >= m[2])))
+    posXnegY <- ((X >= m[1]) & ((Y <  m[2])))
+    negXposY <- ((X <  m[1]) & ((Y >= m[2])))
+    negXnegY <- ((X <  m[1]) & ((Y <  m[2])))
+    if (sum(posXposY) > 0) 
+        text(X[posXposY], Y[posXposY], labs[posXposY], adj = c(0.5-offset, 
+            0.5-offset), cex = cex, ...)
+    if (sum(posXnegY) > 0) 
+        text(X[posXnegY], Y[posXnegY], labs[posXnegY], adj = c(0.5-offset, 
+            0.5+offset), cex = cex, ...)
+    if (sum(negXposY) > 0) 
+        text(X[negXposY], Y[negXposY], labs[negXposY], adj = c(0.5+offset, 
+            0.5-offset), cex = cex, ...)
+    if (sum(negXnegY) > 0) 
+        text(X[negXnegY], Y[negXnegY], labs[negXnegY], adj = c(0.5+offset, 
+            0.5+offset), cex = cex, ...)
 }
 
 #GRM
