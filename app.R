@@ -20,7 +20,7 @@ if(length(grep("linux",sessionInfo()$platform, ignore.case = TRUE))>0) {
 #  system("git rev-list head --max-count 1 > gitTag.txt")
 } else {
   print("windows")
-  system("7z.exe x plink_win.7z e plink_win.exe >nul")
+  system("expand ./plink.cab ./plink_win.exe >nul")
   plink2 = "plink_win.exe"
 }
 
