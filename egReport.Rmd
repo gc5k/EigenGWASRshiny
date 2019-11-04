@@ -145,6 +145,7 @@ Manhhattan plot for genomic scan for eigenvectors.
 PC=params$espace
 froot = params$froot
 
+tophit = data.frame()
 for(i in 1:PC) {
   layout(matrix(1:2, 1, 2))
   EigenRes=read.table(paste0(froot, ".", i, ".assoc.linear"), as.is = T, header = T)
@@ -153,6 +154,9 @@ for(i in 1:PC) {
   gc=qchisq(median(EigenRes$P), 1, lower.tail = F)/qchisq(0.5, 1, lower.tail = F)
   EigenRes$P=pchisq(qchisq(EigenRes$Praw, 1, lower.tail = F)/gc, 1, lower.tail = F)
   manhattan(EigenRes, genomewideline = -log10(params$pcut/nrow(EigenRes)), title=paste("eSpace ", i), pch=16, cex=0.3, bty='n')
+  
+  EigenRes$Espace = rep(i,dim(EigenRes)[1])
+  tophit = rbind(tophit, EigenRes[order(EigenRes$P),][c(1:5),c("Espace","CHR","SNP","BP","P","Praw")])
 
   #QQplot
   chiseq=qchisq(seq(1/nrow(EigenRes), 1-1/nrow(EigenRes), length.out = nrow(EigenRes)), 1)
@@ -161,6 +165,13 @@ for(i in 1:PC) {
   legend("topleft", legend = c("Raw", "GC correction"), pch=16, cex=0.5, col=c("grey", "black"), bty='n')
   abline(a=0, b=1, col="red", lty=2)
 }
+
+knitr::kable(tophit,
+             caption = "Top hits in each espace", 
+             col.names = c("Espace", "CHR", "SNP", "BP", "P", "Praw"),
+             row.names = FALSE,
+             align = 'c')
+  # When kable() is wrapped insiade other expression such as for loop, print(kable()) must be explicit
 
 ```
 
