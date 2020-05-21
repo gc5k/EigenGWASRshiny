@@ -10,7 +10,7 @@ output:
 params:
   froot: arab
   espace: 2
-  sc: 1
+  #sc: 1
   pcut: 0.05
 ---
 
@@ -80,7 +80,7 @@ manhattan <- function(dataframe, colors=c("gray10", "gray50"), ymax="max", limit
 
 
 # EigenGWAS Report {.tabset .tabset-fade .tabset-pills}
-A brief summary for EigenGWAS analysis.
+Summary for EigenGWAS analysis.
 
 ## 1 MAF
 Minor allele frequency distribution of the sample.
@@ -94,7 +94,7 @@ The distribution of the top eigenvalues and the projection of the samples in the
 ```{r, pca}
 layout(matrix(1:2, 1, 2))
 evalF=read.table(paste0(params$froot, ".eigenval"), as.is = T)
-barplot(evalF[,1]/params$sc, border = F, main="Eigenvalue")
+barplot(evalF[,1], border = F, main="Eigenvalue")
 abline(h=1, lty=2, col="black")
 
 pcF=read.table(paste0(params$froot, ".eigenvec"), as.is = T)
@@ -107,15 +107,16 @@ $n_e$ reflects the relative sample size of the sample. If the sample is random, 
 layout(matrix(1:2, 1, 2))
 gz=gzfile(paste0(params$froot, ".grm.gz"))
 grm=read.table(gz, as.is = T)
-Ne=-1/mean(grm[grm[,1]!=grm[,2], 4]/params$sc)
-Me=1/var(grm[grm[,1]!=grm[,2], 4]/params$sc)
-hist(grm[grm[,1]!=grm[,2],4]/params$sc, main="Pairwise relatedness ", xlab="Relatedness score", breaks = 50)
+offDiag = grm[grm[,1]!=grm[,2], 4]
+Ne=-1/mean(offDiag)
+Me=1/var(offDiag)
+hist(offDiag, main="Pairwise relatedness ", xlab="Relatedness score", breaks = 50)
         
 nn=nrow(read.table(paste0(params$froot, ".fam"), as.is = T))
 mm=nrow(read.table(paste0(params$froot, ".bim"), as.is = T))
 legend("topright", legend = c(paste0("ne=", format(Ne, digits=3, nsmall=2), ' [',nn, ']'), paste0("me=", format(Me, digits=3, nsmall=2), ' [',mm,']')), bty='n')
 
-hist(grm[grm[,1]==grm[,2],4]/params$sc, main="Diagonal relatedness", xlab="Relatedness score", breaks = 15)
+hist(grm[grm[,1]==grm[,2],4], main="Diagonal relatedness", xlab="Relatedness score", breaks = 15)
 ```
 
 ## 4 Eigenvalue vs $\lambda_{GC}$
@@ -129,13 +130,13 @@ for(i in 1:PC) {
   GC[i] = qchisq(median(eg$P, na.rm = T), 1, lower.tail = F)/qchisq(0.5, 1)
 }
 
-egc=matrix(c(Evev[1:PC,1]/params$sc, GC), PC, 2, byrow = F)
+egc=matrix(c(Evev[1:PC,1], GC), PC, 2, byrow = F)
 library(knitr)
-kable(   as.data.frame(format(egc, digit=3)), caption="Eigenvalue vs Genomic inflation factor", col.names = c("Eigenvalue", expression(paste(lambda[GC]))))
+kable(as.data.frame(format(egc, digit=3)), caption="Eigenvalue vs Genomic inflation factor", col.names = c("Eigenvalue", expression(lambda[GC])))
 rownames(egc)=seq(1, PC)
 barplot(t(egc), beside = T, border = F, xlab="eSpace", ylim=c(0,max(egc)+2))
         abline(h=1, lty=2, lwd=2)
-legend("topright", legend = c("Eigenvalue", expression(paste(lambda[gc]))), pch=15, col=c("black", "grey"), bty='n')
+legend("topright", legend = c("Eigenvalue", expression(lambda[gc])), pch=15, col=c("black", "grey"), bty='n')
 
 ```
 
@@ -152,7 +153,7 @@ for(i in 1:PC) {
   EigenRes=EigenRes[which(!is.na(EigenRes$P)),]
   EigenRes$Praw=EigenRes$P
   gc=qchisq(median(EigenRes$P), 1, lower.tail = F)/qchisq(0.5, 1, lower.tail = F)
-  EigenRes$P=pchisq(qchisq(EigenRes$Praw, 1, lower.tail = F)/gc, 1, lower.tail = F)
+  EigenRes$P=pchisq((EigenRes$STAT)^2/gc, 1, lower.tail = F)
   manhattan(EigenRes, genomewideline = -log10(params$pcut/nrow(EigenRes)), title=paste("eSpace ", i), pch=16, cex=0.3, bty='n')
   
   EigenRes$Espace = rep(i,dim(EigenRes)[1])
