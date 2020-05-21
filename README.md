@@ -6,3 +6,5 @@ library(DT)
 runGitHub("EigenGWASRshiny", "GuoanQi1996")
 ~~~
 All platforms support.
+
+Online analytic tool is now available at www.eigengwas.com.
