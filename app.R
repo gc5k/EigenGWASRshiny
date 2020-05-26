@@ -65,18 +65,18 @@ ui <- fluidPage(
       ),
       hr(),
       fluidRow(
-        #column(
-        #  2,
-        #  radioButtons(
-        #    'bred',
-        #    'Population type',
-        #    choices = list('Outbred' = 'outbred', 'Inbred' = 'inbred'),
-        #    selected = 'outbred',
-        #    inline = T
-        #  )
-        #),
         column(
-          6,
+          2,
+          radioButtons(
+            'bred',
+            'Population type',
+            choices = list('Outbred' = 'outbred', 'Inbred' = 'inbred'),
+            selected = 'outbred',
+            inline = T
+          )
+        ),
+        column(
+          4,
           sliderInput(
             'maf_cut',
             'MAF threshold',
@@ -84,7 +84,7 @@ ui <- fluidPage(
           )
         ),
         column(
-          6,
+          4,
           sliderInput(
             'espace',
             'Eigen space',
@@ -435,7 +435,7 @@ server <- function(input, output, session) {
       incProgress(1/n, detail = paste0(" finishing EigenGWAS."))
     })
     
-    
+    sc=ifelse(input$bred == 'inbred', 2, 1)
     withProgress(message="Visualizing:", value=0, {
       PC = input$espace
       n=2+2*PC
@@ -454,9 +454,7 @@ server <- function(input, output, session) {
         evalF=read.table(paste0(froot, ".eigenval"), as.is = T)
         pcF=read.table(paste0(froot, ".eigenvec"), as.is = T)
         
-        #20200520 eigenvalue by sc ?
-        #barplot(evalF[,1]/sc, border = F, main="Eigenvalue")
-        barplot(evalF[,1], border = F, main="Eigenvalue")
+        barplot(evalF[,1]/sc, border = F, main="Eigenvalue")
         abline(h=1, lty=2, col="black")
         plot(main=paste0("eSpace ", input$x, " vs ", input$y), pcF[,input$x+2], pcF[,input$y+2], xlab=paste0("eSpace ", input$x), ylab=paste0("eSpace ", input$y), bty='n', pch=16, cex=0.5,
              col=ifelse(pcF[,3]<0, "red", "blue"))
@@ -466,24 +464,21 @@ server <- function(input, output, session) {
       incProgress(1/n, detail = paste0(" GRM plot ... "))
       output$grm <- renderPlot({
         froot = currentFile()
-        #sc=ifelse(input$bred == 'inbred', 2, 1)
-        
         layout(matrix(1:2, 1, 2))
         gz=gzfile(paste0(froot, ".grm.gz"))
         grm=read.table(gz, as.is = T)
-        # 20200520 seem the following calculation doesnt need population type, sc is redundant
-        #Ne=-1/mean(grm[grm[,1]!=grm[,2], 4]/sc)
-        #Me=1/var(grm[grm[,1]!=grm[,2], 4]/sc)
+
         off_diagnol = grm[grm[,1]!=grm[,2], 4]
-        Ne=-1/mean(off_diagnol)
-        Me=1/var(off_diagnol)
-        hist(off_diagnol, main="Pairwise relatedness", xlab="Relatedness score", breaks = 50)
+        Ne=-1/mean(off_diagnol/sc)
+        Me=1/var(off_diagnol/sc)
+
+        hist(off_diagnol/sc, main="Pairwise relatedness", xlab="Relatedness score", breaks = 50)
         
         nn=nrow(read.table(paste0(froot, ".fam"), as.is = T))
         mm=nrow(read.table(paste0(froot, ".bim"), as.is = T))
         legend("topright", legend = c(paste0("ne=", format(Ne, digits=3, nsmall=2), ' [',nn, ']'), paste0("me=", format(Me, digits=3, nsmall=2), ' [',mm,']')), bty='n')
         
-        hist(grm[grm[,1]==grm[,2],4], main="Diagonal relatedness", xlab="Relatedness score", breaks = 15)
+        hist(grm[grm[,1]==grm[,2],4]/sc, main="Diagonal relatedness", xlab="Relatedness score", breaks = 15)
       })
       
       incProgress(1/n, detail = paste0(" Eigenvalue plot ... "))
@@ -497,8 +492,8 @@ server <- function(input, output, session) {
           GC[i] = qchisq(median(eg$P, na.rm = T), 1, lower.tail = F)/qchisq(0.5, 1, lower.tail = F)
         }
         
-        #egc=matrix(c(Evev[1:PC,1]/sc, GC), PC, 2, byrow = F)
-        egc=matrix(c(Evev[1:PC,1], GC), PC, 2, byrow = F)
+        egc=matrix(c(Evev[1:PC,1]/sc, GC), PC, 2, byrow = F)
+        #egc=matrix(c(Evev[1:PC,1], GC), PC, 2, byrow = F)
         rownames(egc)=seq(1, PC)
         barplot(t(egc), beside = T, border = F, xlab="eSpace", ylim=c(0,max(egc)+2))
         abline(h=1, lty=2, lwd=2)
@@ -625,7 +620,7 @@ server <- function(input, output, session) {
       # Set up parameters to pass to Rmd document
       params <- list(froot = frt,
                      espace = input$espace, 
-                     #sc = ifelse(input$bred == 'inbred', 2, 1),
+                     sc = ifelse(input$bred == 'inbred', 2, 1),
                      pcut = as.numeric(input$threshold))
       
       rmarkdown::render(tempReport, output_file = file,
