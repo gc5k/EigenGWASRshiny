@@ -224,13 +224,13 @@ ui <- fluidPage(
         column(2,HTML(paste0("Arabidopsis thaliana"))),
         column(2,downloadLink("arabRes", "EigenGWAS Report")),
         column(2,downloadLink("arabData", "Data Source")),
-        column(2,HTML("<a href=\"https://www.sciencedirect.com/science/article/pii/S0092867416306675?via%3Dihub\">DOI: 10.1016/j.cell.2016.05.063</a>")),
+        column(2,HTML("<a href=\"https://doi.org/10.1534/g3.116.038877\">DOI: 10.1534/g3.116.038877</a>")),
         br(),
-        column(2,HTML(paste0("Maize"))),
-        column(2,downloadLink("MaizeRes", "EigenGWAS Report")),
-        column(2,downloadLink("MaizeData", "Data Source")),
-        column(2,HTML("<a href=\"https://onlinelibrary.wiley.com/doi/full/10.1111/mec.15169\">DOI: 10.1111/mec.15169</a>")),
-        br(),
+        #column(2,HTML(paste0("Maize"))),
+        #column(2,downloadLink("MaizeRes", "EigenGWAS Report")),
+        #column(2,downloadLink("MaizeData", "Data Source")),
+        #column(2,HTML("<a href=\"https://onlinelibrary.wiley.com/doi/full/10.1111/mec.15169\">DOI: 10.1111/mec.15169</a>")),
+        #br(),
         column(2,HTML(paste0("Dog"))),
         column(2,downloadLink("DogRes", "EigenGWAS Report")),
         column(2,downloadLink("DogData", "Data Source")),
@@ -329,18 +329,18 @@ server <- function(input, output, session) {
       file.copy("./archive/data/Arab.tar.gz", file)
     }
   )
-  output$MaizeRes <- downloadHandler(
-    filename = "maize.html",
-    content = function(file) {
-      file.copy("./archive/results/maize.html", file)
-    }
-  )
-  output$MaizeData <- downloadHandler(
-    filename = "maize.tar.gz",
-    content = function(file) {
-      file.copy("./archive/data/maize.tar.gz", file)
-    }
-  )
+  #output$MaizeRes <- downloadHandler(
+  #  filename = "maize.html",
+  #  content = function(file) {
+  #    file.copy("./archive/results/maize.html", file)
+  #  }
+  #)
+  #output$MaizeData <- downloadHandler(
+  #  filename = "maize.tar.gz",
+  #  content = function(file) {
+  #    file.copy("./archive/data/maize.tar.gz", file)
+  #  }
+  #)
   
   output$DogRes <- downloadHandler(
     filename = "doggy.html",
