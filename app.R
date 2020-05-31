@@ -219,38 +219,6 @@ ui <- fluidPage(
     tabPanel(
       title = "About",
       value = "about",
-      tags$h3("Archives"),
-      fluidPage(
-        column(2,HTML(paste0("Arabidopsis thaliana"))),
-        column(2,downloadLink("arabRes", "EigenGWAS Report")),
-        column(2,downloadLink("arabData", "Data Source")),
-        column(2,HTML("<a href=\"https://doi.org/10.1534/g3.116.038877\">DOI: 10.1534/g3.116.038877</a>")),
-        br(),
-        #column(2,HTML(paste0("Maize"))),
-        #column(2,downloadLink("MaizeRes", "EigenGWAS Report")),
-        #column(2,downloadLink("MaizeData", "Data Source")),
-        #column(2,HTML("<a href=\"https://onlinelibrary.wiley.com/doi/full/10.1111/mec.15169\">DOI: 10.1111/mec.15169</a>")),
-        #br(),
-        column(2,HTML(paste0("Dog"))),
-        column(2,downloadLink("DogRes", "EigenGWAS Report")),
-        column(2,downloadLink("DogData", "Data Source")),
-        column(2,HTML("<a href=\"https://www.g3journal.org/content/9/1/117\">DOI: 10.1534/g3.118.200836</a>")),
-        br(),
-        column(2,HTML(paste0("Great tit"))),
-        column(2,downloadLink("TitRes", "EigenGWAS Report")),
-        column(2,downloadLink("TitData", "Data Source")),
-        column(2,HTML("<a href=\"https://science.sciencemag.org/content/358/6361/365\">DOI: 10.1126/science.aal3298</a>")),
-        br(),
-        column(2,HTML(paste0("UKB Chineses"))),
-        column(2,downloadLink("UKBRes", "EigenGWAS Report")),
-        column(2,downloadLink("UKBData", "Data Source")),
-        column(2,HTML("<a href=\"https://www.nature.com/articles/s41586-018-0579-z\">DOI: 10.1038/s41586-018-0579-z</a>")),
-        br(),
-        column(2,HTML(paste0("ALS Chineses"))),
-        column(2,downloadLink("ALSRes", "EigenGWAS Report")),
-        column(2,downloadLink("ALSData", "Data Source")),
-        column(2,HTML("<a href=\"https://www.nature.com/articles/s41467-017-00471-1\">DOI: 10.1038/s41467-017-00471-1</a>"))
-        ),
       tags$br(),
       tags$h3("Citation"),
       tags$p(HTML("<a href=\"https://www.nature.com/articles/hdy201625\">Chen, G.B. et al, EigenGWAS: finding loci under selection through genome-wide association studies of eigenvectors in structured populations, Heredity, 2016, 117:51-61.</a>")),
@@ -316,83 +284,6 @@ server <- function(input, output, session) {
     
     return (frootMAF)
   })
-#archive  
-  output$arabRes <- downloadHandler(
-    filename = "arab.html",
-    content = function(file) {
-      file.copy("./archive/results/arab.html", file)
-    }
-  )
-  output$arabData <- downloadHandler(
-    filename = "Arab.tar.gz",
-    content = function(file) {
-      file.copy("./archive/data/Arab.tar.gz", file)
-    }
-  )
-  #output$MaizeRes <- downloadHandler(
-  #  filename = "maize.html",
-  #  content = function(file) {
-  #    file.copy("./archive/results/maize.html", file)
-  #  }
-  #)
-  #output$MaizeData <- downloadHandler(
-  #  filename = "maize.tar.gz",
-  #  content = function(file) {
-  #    file.copy("./archive/data/maize.tar.gz", file)
-  #  }
-  #)
-  
-  output$DogRes <- downloadHandler(
-    filename = "doggy.html",
-    content = function(file) {
-      file.copy("./archive/results/doggy.html", file)
-    }
-  )
-  output$DogData <- downloadHandler(
-    filename = "Dog.tar.gz",
-    content = function(file) {
-      file.copy("./archive/data/dog.tar.gz", file)
-    }
-  )
-  
-  output$TitRes <- downloadHandler(
-    filename = "tit.html",
-    content = function(file) {
-      file.copy("./archive/results/greatTit.html", file)
-    }
-  )
-  output$TitData <- downloadHandler(
-    filename = "tit.tar.gz",
-    content = function(file) {
-      file.copy("./archive/data/greatTit.tar.gz", file)
-    }
-  )
-  
-  output$UKBRes <- downloadHandler(
-    filename = "ukb.html",
-    content = function(file) {
-      file.copy("./archive/results/UK_CH.html", file)
-    }
-  )
-  output$UKBData <- downloadHandler(
-    filename = "ukb.tar.gz",
-    content = function(file) {
-      file.copy("./archive/data/UKB_CH.tar.gz", file)
-    }
-  )
-  
-  output$ALSRes <- downloadHandler(
-    filename = "ALS.html",
-    content = function(file) {
-      file.copy("./archive/results/ALS_CH.html", file)
-    }
-  )
-  output$ALSData <- downloadHandler(
-    filename = "ALS.tar.gz",
-    content = function(file) {
-      file.copy("./archive/data/ALS_CH.tar.gz", file)
-    }
-  )
   
   observeEvent(input$run, {
     updateTabsetPanel(session, "inNavbar", selected = "visualization")
