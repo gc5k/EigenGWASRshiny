@@ -174,48 +174,48 @@ ui <- fluidPage(
         )
       )
     ),
-    tabPanel(
-      title = "Power",
-      value = "power",
-      fluidPage(
-        # Application title
-        titlePanel("EigenGWAS Power Calculator"),
-        hr(),
-        # Sidebar with a slider input for number of bins
-        sidebarLayout(
-          sidebarPanel(
-            #        numericInput("n", "Sample size",
-            #                     value = 500, min=100),
-            numericInput("m", "Marker number",
-                         value = 10000, min=1),
-            sliderInput("w1",
-                        "Subpop 1 proportion",
-                        min = 0.05, max = 0.95, value = 0.5),
-            sliderInput("p1", "Frequency at population 1",
-                        min = 0.01, max=0.99, value=0.3),
-            sliderInput("p2", "Frequency at population 2",
-                        min = 0.01, max=0.99, value=0.5),
-            selectInput("alpha", "Alpha",
-                        choices = c("0.001", "0.005", "0.01", "0.05", "0.1"), 
-                        selected="0.05"),
-            selectInput("beta", "Beta",
-                        choices = c("0.5", "0.6", "0.7", "0.8", "0.9"),
-                        selected="0.8"),
-            actionButton(
-              'powerupdate',
-              'Update power',
-              icon = icon("refresh")
-            )
-            #submitButton(text="Update power", icon("refresh"))
-          ),
-          
-          # Show a plot of the generated distribution
-          mainPanel(
-            plotOutput("distPlot")
-          )
-        )
-      )
-    ),
+    # tabPanel(
+    #   title = "Power",
+    #   value = "power",
+    #   fluidPage(
+    #     # Application title
+    #     titlePanel("EigenGWAS Power Calculator"),
+    #     hr(),
+    #     # Sidebar with a slider input for number of bins
+    #     sidebarLayout(
+    #       sidebarPanel(
+    #         #        numericInput("n", "Sample size",
+    #         #                     value = 500, min=100),
+    #         numericInput("m", "Marker number",
+    #                      value = 10000, min=1),
+    #         sliderInput("w1",
+    #                     "Subpop 1 proportion",
+    #                     min = 0.05, max = 0.95, value = 0.5),
+    #         sliderInput("p1", "Frequency at population 1",
+    #                     min = 0.01, max=0.99, value=0.3),
+    #         sliderInput("p2", "Frequency at population 2",
+    #                     min = 0.01, max=0.99, value=0.5),
+    #         selectInput("alpha", "Alpha",
+    #                     choices = c("0.001", "0.005", "0.01", "0.05", "0.1"), 
+    #                     selected="0.05"),
+    #         selectInput("beta", "Beta",
+    #                     choices = c("0.5", "0.6", "0.7", "0.8", "0.9"),
+    #                     selected="0.8"),
+    #         actionButton(
+    #           'powerupdate',
+    #           'Update power',
+    #           icon = icon("refresh")
+    #         )
+    #         #submitButton(text="Update power", icon("refresh"))
+    #       ),
+    #       
+    #       # Show a plot of the generated distribution
+    #       mainPanel(
+    #         plotOutput("distPlot")
+    #       )
+    #     )
+    #   )
+    # ),
     tabPanel(
       title = "About",
       value = "about",
