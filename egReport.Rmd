@@ -12,10 +12,12 @@ params:
   espace: 2
   sc: 1
   pcut: 0.05
+  height: 480
+  width: 480
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = FALSE,fig.align = 'center')
 #source("helper.R")
 ```
 
@@ -142,29 +144,46 @@ legend("topright", legend = c("Eigenvalue", expression(lambda[gc])), pch=15, col
 
 ## 5 EigenGWAS
 Manhhattan plot for genomic scan for eigenvectors.
-```{r, eGWAS}
+```{r, eGWAS, results="asis",fig.align="center"}
 PC=params$espace
 froot = params$froot
-
 tophit = data.frame()
+
 for(i in 1:PC) {
-  layout(matrix(1:2, 1, 2))
   EigenRes=read.table(paste0(froot, ".", i, ".assoc.linear"), as.is = T, header = T)
   EigenRes=EigenRes[which(!is.na(EigenRes$P)),]
   EigenRes$Praw=EigenRes$P
   gc=qchisq(median(EigenRes$P), 1, lower.tail = F)/qchisq(0.5, 1, lower.tail = F)
   EigenRes$P=pchisq((EigenRes$STAT)^2/gc, 1, lower.tail = F)
-  manhattan(EigenRes, genomewideline = -log10(params$pcut/nrow(EigenRes)), title=paste("eSpace ", i), pch=16, cex=0.3, bty='n')
   
-  EigenRes$Espace = rep(i,dim(EigenRes)[1])
-  tophit = rbind(tophit, EigenRes[order(EigenRes$P),][c(1:5),c("Espace","CHR","SNP","BP","P","Praw")])
+  EigenResName = paste0(tempdir(),'/EgE',i,'.png')
+  QQPlotName = paste0(tempdir(),'/QQE',i,'.png')
+  if(!file.exists(EigenResName)){
+    EigenRes_sig = EigenRes[EigenRes$P<=0.05,]
+    EigenRes_no_sig = EigenRes[EigenRes$P>0.05,]
+    EigenRes_com = rbind(EigenRes_sig,EigenRes_no_sig[sample(1:nrow(EigenRes_no_sig),0.6*nrow(EigenRes_no_sig)),])
+    chiseq=qchisq(seq(1/nrow(EigenRes), 1-1/nrow(EigenRes), length.out = nrow(EigenRes)), 1)
+    
+    png(filename = EigenResName,width = params$width,height = params$height)
+    manhattan(EigenRes_com, genomewideline = -log10(params$pcut/nrow(EigenRes)), title=paste("eSpace ", i), pch=16, cex=0.3, bty='n')
+    dev.off()
+    
+    png(filename = QQPlotName,width = params$width,height = params$height)
+    qqplot(chiseq, qchisq(EigenRes$Praw, 1, lower.tail = F), xlab=expression(paste("Theoretical ", chi[1]^2)), ylab=expression(paste("Observed ", chi[1]^2)), bty="n", col="grey", pch=16, cex=0.5)
+    points(sort(chiseq), sort(qchisq(EigenRes$P, 1, lower.tail = F)), col="black", pch=16, cex=0.5)
+    legend("topleft", legend = c("Raw", "GC correction"), pch=16, cex=1, col=c("grey", "black"), bty='n')
+    abline(a=0, b=1, col="red", lty=2)
+    dev.off()
+  }
+  cat("\n<center>\n")
+  cat(paste0("![](",EigenResName,")"),"\n")
+  cat("\n</center>\n")
+  cat("\n<center>\n")
+  cat(paste0("![](",QQPlotName,")"),"\n")
+  cat("\n</center>\n")
 
-  #QQplot
-  chiseq=qchisq(seq(1/nrow(EigenRes), 1-1/nrow(EigenRes), length.out = nrow(EigenRes)), 1)
-  qqplot(chiseq, qchisq(EigenRes$Praw, 1, lower.tail = F), xlab=expression(paste("Theoretical ", chi[1]^2)), ylab=expression(paste("Observed ", chi[1]^2)), bty="n", col="grey", pch=16, cex=0.5)
-  points(sort(chiseq), sort(qchisq(EigenRes$P, 1, lower.tail = F)), col="black", pch=16, cex=0.5)
-  legend("topleft", legend = c("Raw", "GC correction"), pch=16, cex=0.5, col=c("grey", "black"), bty='n')
-  abline(a=0, b=1, col="red", lty=2)
+  EigenRes$Espace = rep(i,dim(EigenRes)[1])
+  tophit = rbind(tophit, EigenRes[order(EigenRes$P),][c(1:10),c("Espace","CHR","SNP","BP","P","Praw")])
 }
 
 knitr::kable(tophit,
