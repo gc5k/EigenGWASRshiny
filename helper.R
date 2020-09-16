@@ -272,3 +272,4 @@ EigenGWASPlot_SaveAsPng <- function(path,arg){
   dev.off()
   list(src=imagefile)
 }
+
