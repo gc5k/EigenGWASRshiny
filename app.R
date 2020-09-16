@@ -2,6 +2,7 @@
 conf=read.table("EigenGWAS.conf", as.is = T)
 
 library(shiny)
+library(bsplus)
 #library(shinyjs)
 # Source helpers ----
 source('helper.R')
@@ -26,7 +27,7 @@ if(length(grep("linux",sessionInfo()$platform, ignore.case = TRUE))>0) {
 
 options(shiny.maxRequestSize=conf[1,2]*1024^2, shiny.launch.browser=T)
 gTag=read.table("gitTag.txt")
-multipleSpace = '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
+#multipleSpace = '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
 # Define UI for EigenGWAS Application
 ui <- fluidPage(
   theme = "style.css",
@@ -56,7 +57,7 @@ ui <- fluidPage(
             paste0('3 source files (.bim, .bed, .fam) [< ', conf[1,2],' MB]'),
             multiple = TRUE,
             accept = c("bed", "fam", "bim")
-          )
+          ) 
         ),
         column(
           6,
@@ -73,15 +74,21 @@ ui <- fluidPage(
             choices = list('Outbred' = 'outbred', 'Inbred' = 'inbred'),
             selected = 'outbred',
             inline = T
-          )
+          ) %>%
+            shinyInput_label_embed(
+              shiny_iconlink() %>%
+                bs_embed_popover(
+                  title = "INBRED is chosen if your sample has homogenous genome, otherwise choose OUTBRED", content = "", placement = "left"
+                )
+            )
         ),
         column(
           4,
           sliderInput(
             'maf_cut',
             'MAF threshold',
-            value = 0.01, min = 0, max = 0.4, step = 0.05
-          )
+            value = 0.01, min = 0, max = 0.1, step = 0.01
+          ) 
         ),
         column(
           4,
@@ -140,15 +147,17 @@ ui <- fluidPage(
                          sliderInput(
                            'EigenGWASPlot_espace',
                            "eSpace", 
-                           min = 1, max = 5, value = c(1,1), dragRange=TRUE, step = 1),
+                           min = 1, max = 5, value = 1, dragRange=TRUE, step = 1),
                          selectInput(
                            'threshold',
                            'p-value cutoff',
                            choices = c(0.1, 0.05, 0.01, 0.005, 0.001), 
                            selected = 0.05                  							
-                         )
+                         ),
+                         width = 2
                        ),
-                       mainPanel(plotOutput('eigengwas'))
+                       mainPanel(plotOutput('eigengwas'),width = 5),
+                       mainPanel(plotOutput('qqplot'),width = 5)    
                      )
                    )
                  )
@@ -160,14 +169,20 @@ ui <- fluidPage(
         column(
           12,
           mainPanel(
-            column(4,
+            column(2,
                    downloadButton(
                      'eReport', 
-                     'Generate eReport'
+                     'Summary Report'
+                   )
+            ),
+            column(2,
+                   downloadButton(
+                     'fReport', 
+                     'Full Report'
                    )
             ),
             column(
-              6,
+              8,
               DT::dataTableOutput('topsnp')
             )
           )
@@ -219,11 +234,18 @@ ui <- fluidPage(
     tabPanel(
       title = "About",
       value = "about",
+      #tags$br(),
+      tags$h3("Source Code"),
+      tags$p(HTML("For EigenGWAS core algorithm implementation and R Shiny code in this web tool please refer to")),
+      tags$p(HTML("<a href=\"https://github.com/GuoanQi1996/EigenGWASRshiny\">GitHub repository: EigenGWASRShiny.</a>")),
+      tags$p(HTML("For EigenGWAS implementation in JAVA, GEAR (GEnetic Analysis Repository), please refer to")),
+      tags$p(HTML("<a href=\"https://github.com/gc5k/GEAR\">GitHub repository: GEAR.</a>")),
       tags$br(),
       tags$h3("Citation"),
       tags$p(HTML("<a href=\"https://www.nature.com/articles/hdy201625\">Chen, G.B. et al, EigenGWAS: finding loci under selection through genome-wide association studies of eigenvectors in structured populations, Heredity, 2016, 117:51-61.</a>")),
       tags$br(),
       tags$p(HTML(paste("Git version:", gTag[1,1])))
+      
     )
   )
 )
@@ -285,9 +307,12 @@ server <- function(input, output, session) {
     return (frootMAF)
   })
   
+  mark <- gsub('[-: ]','',as.character(Sys.time()))
+  
   observeEvent(input$run, {
     updateTabsetPanel(session, "inNavbar", selected = "visualization")
     ##plink
+    
     withProgress(message="EigenGWAS:", value=0, {
       PC = input$espace
       froot = currentFile()
@@ -297,7 +322,7 @@ server <- function(input, output, session) {
       frqCmd=paste(plink2, "--bfile ", froot, " --autosome-num ", input$autosome, "--freq --out", froot)
       system(frqCmd)
       
-      incProgress(3/n, detail = paste0(" making grm ..."))
+      incProgress(2/n, detail = paste0(" making grm ..."))
       grmCmd=paste(plink2, "--allow-no-sex --bfile", froot, " --autosome-num ", input$autosome, "--make-grm-gz --out", froot)
       system(grmCmd)
       # 20200520 the next two lines of code for data reading is duplicated
@@ -313,7 +338,7 @@ server <- function(input, output, session) {
       #pcRun = 20
       #}
       pcRun=10 # 20200520: directly set pcRun to 10
-      pcaCmd=paste(plink2, "--allow-no-sex --bfile", froot, " --autosome-num ", input$autosome, "--pca", pcRun, "--out", froot)
+      pcaCmd=paste(plink2, "--allow-no-sex --bfile", froot, " --autosome-num ", input$autosome, "--pca", pcRun, "--out", froot,"--thin 0.15")
       system(pcaCmd)
       
       #EigenGWAS
@@ -327,7 +352,8 @@ server <- function(input, output, session) {
     })
     
     sc=ifelse(input$bred == 'inbred', 2, 1)
-    withProgress(message="Visualizing:", value=0, {
+    
+    withProgress(message="Generating reports:", value=0, {
       PC = input$espace
       n=2+2*PC
       
@@ -345,7 +371,9 @@ server <- function(input, output, session) {
         evalF=read.table(paste0(froot, ".eigenval"), as.is = T)
         pcF=read.table(paste0(froot, ".eigenvec"), as.is = T)
         
-        barplot(evalF[,1]/sc, border = F, main="Eigenvalue")
+        evalF = as.numeric(evalF[,1])
+        names(evalF) = c(1:pcRun)
+        barplot(evalF/sc, border = F, main="Eigenvalue",ylim = c(0,max(evalF/sc)*1.2))
         abline(h=1, lty=2, col="black")
         plot(main=paste0("eSpace ", input$x, " vs ", input$y), pcF[,input$x+2], pcF[,input$y+2], xlab=paste0("eSpace ", input$x), ylab=paste0("eSpace ", input$y), bty='n', pch=16, cex=0.5,
              col=ifelse(pcF[,3]<0, "red", "blue"))
@@ -384,15 +412,16 @@ server <- function(input, output, session) {
         }
         
         egc=matrix(c(Evev[1:PC,1]/sc, GC), PC, 2, byrow = F)
-        #egc=matrix(c(Evev[1:PC,1], GC), PC, 2, byrow = F)
         rownames(egc)=seq(1, PC)
         barplot(t(egc), beside = T, border = F, xlab="eSpace", ylim=c(0,max(egc)+2))
         abline(h=1, lty=2, lwd=2)
         legend("topright", legend = c("Eigenvalue", expression(paste(lambda[gc]))), pch=15, col=c("black", "grey"), bty='n')
       })
       
-      incProgress(1/n, detail = paste0(" EigenGWAS visualization ... "))
-      output$eigengwas <- renderPlot({
+      incProgress((2*PC)/n, detail = paste0(" EigenGWAS visualization ... "))
+      output$eigengwas <- renderImage({
+        width = session$clientData$output_eigengwas_width
+        height = session$clientData$output_eigengwas_height
         froot = currentFile()
         pcIdx=input$EigenGWASPlot_espace[1]
         print(paste0("ePC ", pcIdx))
@@ -402,25 +431,22 @@ server <- function(input, output, session) {
         }
         
         egResF=paste0(froot, ".",pcIdx, ".assoc.linear")
-        layout(matrix(1:2, 1, 2))
         EigenRes=read.table(egResF, as.is = T, header = T)
         EigenRes=EigenRes[which(!is.na(EigenRes$P)),]
         EigenRes$Praw=EigenRes$P
         gc=qchisq(median(EigenRes$P, na.rm = T), 1, lower.tail = F)/qchisq(0.5, 1, lower.tail = F)
         print(paste0("GC = ", format(gc, digits = 4)))
         EigenRes$P=pchisq((EigenRes$STAT)^2/gc, 1, lower.tail = F)
-        manhattan(EigenRes, genomewideline = -log10(as.numeric(input$threshold)/nrow(EigenRes)), title=paste("eSpace ", pcIdx), annotatePvalue = TRUE, pch=16, cex=0.3, bty='n')
-        
-        #QQplot
-        chiseq=qchisq(seq(1/nrow(EigenRes), 1-1/nrow(EigenRes), length.out = nrow(EigenRes)), 1)
-        qqplot(chiseq, qchisq(EigenRes$Praw, 1, lower.tail = F), xlab=expression(paste("Theoretical ", chi[1]^2)), ylab=expression(paste("Observed ", chi[1]^2)), bty="n", col="grey", pch=16, cex=0.5)
-        points(sort(chiseq), sort(qchisq(EigenRes$P, 1, lower.tail = F)), col="black", pch=16, cex=0.5)
-        legend("topleft", legend = c("Raw", "GC correction"), pch=16, cex=0.5, col=c("grey", "black"), bty='n')
-        abline(a=0, b=1, col="red", lty=2)
+        EigenRes_sig = EigenRes[EigenRes$P<=0.05,]
+        EigenRes_no_sig = EigenRes[EigenRes$P>0.05,]
+        EigenRes_com = rbind(EigenRes_sig,EigenRes_no_sig[sample(1:nrow(EigenRes_no_sig),0.6*nrow(EigenRes_no_sig)),])
+        png(filename = paste0(tempdir(),'/EgE',pcIdx,'.png'),width = width,height = height)
+        manhattan(EigenRes_com, genomewideline = -log10(as.numeric(input$threshold)/nrow(EigenRes)), title=paste("eSpace ", pcIdx), annotatePvalue = NULL, pch=16, cex=0.3, bty='n')
+        dev.off()
         
         output$topsnp <- DT::renderDataTable(
           DT::datatable(
-            EigenRes[order(EigenRes$P),][c(1:5),c(1:3,9,10)],
+            EigenRes[order(EigenRes$P),][c(1:10),c(1:3,9,10)],
             caption = htmltools::tags$caption(
               style = 'caption-side:bottom;text-align:center;','Table: ',htmltools::em(paste0('Top hits in EigenGWAS, eSpace',pcIdx))),
             options = list(pageLength = 5, 
@@ -430,58 +456,100 @@ server <- function(input, output, session) {
             rownames = FALSE
           )
         )
-      })
+        
+        outImage = paste0(tempdir(),'/EgE',pcIdx,'.png')
+
+        list(src = outImage,
+             width = width,
+             height = height
+        )}, deleteFile = FALSE)
+      
+      output$qqplot <- renderImage({
+        width = session$clientData$output_qqplot_width
+        height = session$clientData$output_qqplot_height
+        froot = currentFile()
+        pcIdx=input$EigenGWASPlot_espace[1]
+        if (pcIdx > input$espace) {
+          showNotification(paste0("eSpace ", pcIdx, " hasn't been scanned yet."), type = "warning")
+          return()
+        }
+        
+        egResF=paste0(froot, ".",pcIdx, ".assoc.linear")
+        EigenRes=read.table(egResF, as.is = T, header = T)
+        EigenRes=EigenRes[which(!is.na(EigenRes$P)),]
+        EigenRes$Praw=EigenRes$P
+        gc=qchisq(median(EigenRes$P, na.rm = T), 1, lower.tail = F)/qchisq(0.5, 1, lower.tail = F)
+        EigenRes$P=pchisq((EigenRes$STAT)^2/gc, 1, lower.tail = F)
+  
+        #QQplot
+        chiseq=qchisq(seq(1/nrow(EigenRes), 1-1/nrow(EigenRes), length.out = nrow(EigenRes)), 1)
+        png(filename = paste0(tempdir(),'/QQE',pcIdx,'.png'),width = width, height = height)
+        qqplot(chiseq, qchisq(EigenRes$Praw, 1, lower.tail = F), xlab=expression(paste("Theoretical ", chi[1]^2)), ylab=expression(paste("Observed ", chi[1]^2)), bty="n", col="grey", pch=16, cex=0.5)
+        points(sort(chiseq), sort(qchisq(EigenRes$P, 1, lower.tail = F)), col="black", pch=16, cex=0.5)
+        legend("topleft", legend = c("Raw", "GC correction"), pch=16, cex=1, col=c("grey", "black"), bty='n')
+        abline(a=0, b=1, col="red", lty=2)
+        dev.off()
+        
+        outImage = paste0(tempdir(),'/QQE',pcIdx,'.png')
+        list(src = outImage,
+             width = width,
+             height = height
+      )}, deleteFile = FALSE)
     })
   })
   
-  observeEvent(input$powerupdate, {
-    output$distPlot <- renderPlot({
-      m=input$m
-      alpha=as.numeric(input$alpha)
-      pcut=alpha/m
-      chiT=qchisq(pcut, 1, lower.tail = F)
+ # observeEvent(input$powerupdate, {
+  #  output$distPlot <- renderPlot({
+  #    m=input$m
+  #    alpha=as.numeric(input$alpha)
+  #    pcut=alpha/m
+  #    chiT=qchisq(pcut, 1, lower.tail = F)
       
-      n=c(100,  200,  500,   1000,  1500,  2000,
-          5000, 7500, 10000, 15000, 20000, 50000)
-      PW=matrix(0, 2, length(n))
+  #    n=c(100,  200,  500,   1000,  1500,  2000,
+  #        5000, 7500, 10000, 15000, 20000, 50000)
+  #    PW=matrix(0, 2, length(n))
       
-      w1=input$w1
-      w2=1-w1
+  #    w1=input$w1
+  #    w2=1-w1
       
-      p1=input$p1
-      h1=2*p1*(1-p1)
-      p2=input$p2
-      h2=2*p2*(1-p2)
+  #    p1=input$p1
+  #   h1=2*p1*(1-p1)
+  #   p2=input$p2
+  #    h2=2*p2*(1-p2)
       
-      p=w1*p1+w2*p2
-      H=w1*h1+w2*h2
+  #    p=w1*p1+w2*p2
+  #    H=w1*h1+w2*h2
       
-      for(i in 1:length(n)) {
-        ncpA=4*n[i]*w1*w2*(p1-p2)^2/(2*p*(1-p))
-        ncpD=n[i]*w1*w2*(h1-h2)^2/H
+   #   for(i in 1:length(n)) {
+  #      ncpA=4*n[i]*w1*w2*(p1-p2)^2/(2*p*(1-p))
+  #      ncpD=n[i]*w1*w2*(h1-h2)^2/H
         
-        PW[1,i]=pchisq(chiT, 1, ncp=ncpA, lower.tail = F)
-        PW[2,i]=pchisq(chiT, 1, ncp=ncpD, lower.tail = F)
-      }
-      colnames(PW)=n
-      par(las=2)
-      barplot(PW, beside = T, border = F, ylab="Statistical power", xlab="Sample size")
-      abline(h=as.numeric(input$beta), lty=2, col="grey")
-      legend("topleft", legend=c("Add", "Dom"), pch=15, col=c("black", "grey"), bty='n')
-    })
-  })
+  #      PW[1,i]=pchisq(chiT, 1, ncp=ncpA, lower.tail = F)
+  #      PW[2,i]=pchisq(chiT, 1, ncp=ncpD, lower.tail = F)
+  #    }
+  #    colnames(PW)=n
+  #    par(las=2)
+  #    barplot(PW, beside = T, border = F, ylab="Statistical power", xlab="Sample size")
+  #    abline(h=as.numeric(input$beta), lty=2, col="grey")
+  #    legend("topleft", legend=c("Add", "Dom"), pch=15, col=c("black", "grey"), bty='n')
+  #  })
+ # })
   
   output$eReport <- downloadHandler(
     # For PDF output, change this to "report.pdf"
-    
-    filename = "egReport.html",
+    # filename = function(){
+    #   paste0('summary_report',mark,'.html')
+    # },
+    filename = 'summaryReport.html',
     content = function(file) {
+      # summary_file = file.path(tempdir(),paste0('summary_report',mark,'.html'))
+      # file.copy(summary_file,file)
       
       isRunable = TRUE
-      if ( !is.null(input$file_input$datapath)) {
+      if (!is.null(input$file_input$datapath)) {
         frt=currentFile()
         #        frt = substr(input$file_input$datapath[1], 1, nchar(input$file_input$datapath[1])-4)
-        print(frt)
+        #print(frt)
         if ( !file.exists(paste0(frt, ".eigenval"))) {
           isRunable = FALSE
         } else if (!file.exists(paste0(frt, ".frq"))) {
@@ -503,21 +571,45 @@ server <- function(input, output, session) {
         return()
       }
       
-      
       tempReport <- file.path(tempdir(), "egReport.Rmd")
       file.copy("egReport.Rmd", tempReport, overwrite = TRUE)
-      
       
       # Set up parameters to pass to Rmd document
       params <- list(froot = frt,
                      espace = input$espace, 
                      sc = ifelse(input$bred == 'inbred', 2, 1),
-                     pcut = as.numeric(input$threshold))
+                     pcut = as.numeric(input$threshold),
+                     width = session$clientData$output_eigengwas_width,
+                     height = session$clientData$output_eigengwas_height)
       
       rmarkdown::render(tempReport, output_file = file,
                         params = params,
                         envir = new.env(parent = globalenv())
       )
+    }
+  )
+  
+  output$fReport <- downloadHandler(
+    # For PDF output, change this to "report.pdf"
+    filename = function(){
+      paste0("FullReports_E",input$EigenGWASPlot_espace[1],".txt")
+    },
+      
+    content = function(file) {
+      pcIdx=input$EigenGWASPlot_espace[1]
+      if (pcIdx > input$espace) {
+        showNotification(paste0("eSpace ", pcIdx, " hasn't been scanned yet."), type = "warning")
+        return()
+      }
+      
+      froot = currentFile()
+      egResF=paste0(froot, ".",pcIdx, ".assoc.linear")
+      EigenRes<-read.table(egResF, as.is = T, header = T)
+      EigenRes=EigenRes[which(!is.na(EigenRes$P)),]
+      EigenRes$Praw=EigenRes$P
+      gc=qchisq(median(EigenRes$P, na.rm = T), 1, lower.tail = F)/qchisq(0.5, 1, lower.tail = F)
+      EigenRes$P=pchisq((EigenRes$STAT)^2/gc, 1, lower.tail = F)
+      write.table(EigenRes[,-c(5,6)],file,quote=F,col.names = T,row.names = F)
     }
   )
 }
