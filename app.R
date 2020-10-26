@@ -76,7 +76,7 @@ ui <- fluidPage(
             inline = T
           ) %>%
             shinyInput_label_embed(
-              shiny_iconlink() %>%
+              icon("question-circle") %>%
                 bs_embed_popover(
                   title = "INBRED is chosen if your sample has homogenous genome, otherwise choose OUTBRED", content = "", placement = "left"
                 )
@@ -116,6 +116,7 @@ ui <- fluidPage(
         column(12, 
                mainPanel(
                  tabsetPanel(
+                   id = 'EgFunctions',
                    type = 'tabs',
                    tabPanel(
                      'MAF',
@@ -310,10 +311,12 @@ server <- function(input, output, session) {
   mark <- gsub('[-: ]','',as.character(Sys.time()))
   
   observeEvent(input$run, {
-    updateTabsetPanel(session, "inNavbar", selected = "visualization")
+    updateNavbarPage(session, "inNavbar", selected = "visualization")
+    updateTabsetPanel(session, "EgFunctions","EigenGWAS")
     ##plink
     
     withProgress(message="EigenGWAS:", value=0, {
+      time1 = proc.time()
       PC = input$espace
       froot = currentFile()
       
@@ -338,8 +341,14 @@ server <- function(input, output, session) {
       #pcRun = 20
       #}
       pcRun=10 # 20200520: directly set pcRun to 10
-      pcaCmd=paste(plink2, "--allow-no-sex --bfile", froot, " --autosome-num ", input$autosome, "--pca", pcRun, "--out", froot,"--thin 0.15")
-      system(pcaCmd)
+      if(PC<=2){
+        pcaCmd=paste(plink2, "--allow-no-sex --bfile", froot, " --autosome-num ", input$autosome, "--pca", pcRun, "--out", froot,"--thin 0.15")
+        system(pcaCmd)
+      } else {
+        pcaCmd=paste(plink2, "--allow-no-sex --bfile", froot, " --autosome-num ", input$autosome, "--pca", pcRun, "--out", froot)
+        system(pcaCmd)
+      }
+      
       
       #EigenGWAS
       for(i in 1:PC) {
@@ -349,6 +358,10 @@ server <- function(input, output, session) {
         system(liCmd)
       }
       incProgress(1/n, detail = paste0(" finishing EigenGWAS."))
+      time2 = proc.time()
+      time = (time2-time1)[3][[1]]
+      
+      print(paste0(froot,' takes ',time,' seconds to finish the EigenGWAS analysis.')) 
     })
     
     sc=ifelse(input$bred == 'inbred', 2, 1)
@@ -581,7 +594,6 @@ server <- function(input, output, session) {
                      pcut = as.numeric(input$threshold),
                      width = session$clientData$output_eigengwas_width,
                      height = session$clientData$output_eigengwas_height)
-      
       rmarkdown::render(tempReport, output_file = file,
                         params = params,
                         envir = new.env(parent = globalenv())
