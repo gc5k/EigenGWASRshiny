@@ -86,17 +86,20 @@ Summary for EigenGWAS analysis.
 
 ## 1 MAF
 Minor allele frequency distribution of the sample.
-```{r, maf}
+```{r, maf,echo=TRUE}
 fq=read.table(paste0(params$froot, ".frq"), as.is = T, header = T)
 hist(fq$MAF, main="MAF", xlab="Minor allele frequency", xlim=c(0, 0.5), breaks = 50)
 ```
 
-## 2 PCA projection
+## 2 Eigenanalysis
 The distribution of the top eigenvalues and the projection of the samples in the first two eigenspace.
-```{r, pca}
+```{r, pca,echo=TRUE}
 layout(matrix(1:2, 1, 2))
+pcRun = 10
 evalF=read.table(paste0(params$froot, ".eigenval"), as.is = T)
-barplot(evalF[,1]/params$sc, border = F, main="Eigenvalue")
+evalF=evalF[,1]
+names(evalF) = c(1:pcRun)
+barplot(evalF/params$sc, border = F, main="Eigenvalue",ylim = c(0,max(evalF/params$sc)*1.2),xlab = 'Eigenspace')
 abline(h=1, lty=2, col="black")
 
 pcF=read.table(paste0(params$froot, ".eigenvec"), as.is = T)
@@ -105,7 +108,7 @@ plot(main="eSpace 1 vs 2", pcF[,3], pcF[,4], xlab="eSpace 1", ylab="eSpace 2", b
 
 ## 3 GRM
 $n_e$ reflects the relative sample size of the sample. If the sample is random, the $n_e$ should be very close to the sample size of the data. $m_e$ is the effective number of markers for the sample, reflecting the average linkage disequilibrium between markers.
-```{r, grm}
+```{r, grm,echo=TRUE}
 layout(matrix(1:2, 1, 2))
 gz=gzfile(paste0(params$froot, ".grm.gz"))
 grm=read.table(gz, as.is = T)
@@ -123,7 +126,7 @@ hist(grm[grm[,1]==grm[,2],4]/params$sc, main="Diagonal relatedness", xlab="Relat
 
 ## 4 Eigenvalue vs $\lambda_{GC}$
 Eigenvalue reflects the mean of selection, and $\lambda_{GC}$ reflects the median of the selection intensity.
-```{r, ev}
+```{r, ev,echo=TRUE}
 PC=params$espace
 Evev=read.table(paste0(params$froot, ".eigenval"), as.is = T)
 GC=array(0, dim=PC)
@@ -133,8 +136,9 @@ for(i in 1:PC) {
 }
 
 egc=matrix(c(Evev[1:PC,1]/params$sc, GC), PC, 2, byrow = F)
+egc_table = cbind(as.character(seq(1, PC)),as.data.frame(format(egc,digits = 3)))
 library(knitr)
-kable(as.data.frame(format(egc, digit=3)), caption="Eigenvalue vs Genomic inflation factor", col.names = c("Eigenvalue", expression(lambda[GC])))
+kable(egc_table, align = 'c',col.names = c("Eigenspace","Eigenvalue", "Genomic inflation factor"))
 rownames(egc)=seq(1, PC)
 barplot(t(egc), beside = T, border = F, xlab="eSpace", ylim=c(0,max(egc)+2))
         abline(h=1, lty=2, lwd=2)
@@ -144,7 +148,7 @@ legend("topright", legend = c("Eigenvalue", expression(lambda[gc])), pch=15, col
 
 ## 5 EigenGWAS
 Manhhattan plot for genomic scan for eigenvectors.
-```{r, eGWAS, results="asis",fig.align="center"}
+```{r, eGWAS, results="asis",fig.align="center",echo=TRUE}
 PC=params$espace
 froot = params$froot
 tophit = data.frame()
@@ -162,16 +166,16 @@ for(i in 1:PC) {
     EigenRes_sig = EigenRes[EigenRes$P<=0.05,]
     EigenRes_no_sig = EigenRes[EigenRes$P>0.05,]
     EigenRes_com = rbind(EigenRes_sig,EigenRes_no_sig[sample(1:nrow(EigenRes_no_sig),0.6*nrow(EigenRes_no_sig)),])
-    chiseq=qchisq(seq(1/nrow(EigenRes), 1-1/nrow(EigenRes), length.out = nrow(EigenRes)), 1)
+    chiseq=qchisq(seq(1/nrow(EigenRes_com), 1-1/nrow(EigenRes_com), length.out = nrow(EigenRes_com)), 1)
     
     png(filename = EigenResName,width = params$width,height = params$height)
     manhattan(EigenRes_com, genomewideline = -log10(params$pcut/nrow(EigenRes)), title=paste("eSpace ", i), pch=16, cex=0.3, bty='n')
     dev.off()
     
     png(filename = QQPlotName,width = params$width,height = params$height)
-    qqplot(chiseq, qchisq(EigenRes$Praw, 1, lower.tail = F), xlab=expression(paste("Theoretical ", chi[1]^2)), ylab=expression(paste("Observed ", chi[1]^2)), bty="n", col="grey", pch=16, cex=0.5)
-    points(sort(chiseq), sort(qchisq(EigenRes$P, 1, lower.tail = F)), col="black", pch=16, cex=0.5)
-    legend("topleft", legend = c("Raw", "GC correction"), pch=16, cex=1, col=c("grey", "black"), bty='n')
+    qqplot(chiseq, qchisq(EigenRes_com$Praw, 1, lower.tail = F), xlab=expression(paste("Theoretical ", chi[1]^2)), ylab=expression(paste("Observed ", chi[1]^2)), bty="n", col="grey", pch=16, cex=0.5)
+    points(sort(chiseq), sort(qchisq(EigenRes_com$P, 1, lower.tail = F)), col="black", pch=16, cex=0.5)
+    legend("topleft", legend = c("Raw", expression(lambda[gc])), pch=16, cex=1, col=c("grey", "black"), bty='n')
     abline(a=0, b=1, col="red", lty=2)
     dev.off()
   }
@@ -186,14 +190,17 @@ for(i in 1:PC) {
   tophit = rbind(tophit, EigenRes[order(EigenRes$P),][c(1:10),c("Espace","CHR","SNP","BP","P","Praw")])
 }
 
+tophit[,c(5,6)] = format(tophit[,c(5,6)],digits = 4)
+# When kable() is wrapped insiade other expression such as for loop, print(kable()) must be explicit
 knitr::kable(tophit,
              caption = "Top hits in each espace", 
              col.names = c("Espace", "CHR", "SNP", "BP", "P", "Praw"),
              row.names = FALSE,
              align = 'c')
-  # When kable() is wrapped insiade other expression such as for loop, print(kable()) must be explicit
 
 ```
 
 ## 6 Citation
 [Chen, G.B. et al, EigenGWAS: finding loci under selection through genome-wide association studies of eigenvectors in structured populations, Heredity, 2016, 117:51-61.](https://www.nature.com/articles/hdy201625)
+
+Qi, G.A. et al, EigenGWAS: An online visualizing and interactive application for detecting genomic signatures of natural selection (Under review).
