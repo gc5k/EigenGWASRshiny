@@ -1,7 +1,7 @@
 ---
-title: "EigenGWAS"
-author: "Guo-Bo Chen"
-date: "`r Sys.Date()`"
+title: "EigenGWAS Report"
+author: "`r Sys.time()`"
+#date: "`r Sys.time()`"
 output:
  html_document:
     theme: united
@@ -9,6 +9,8 @@ output:
     code_folding: hide
 params:
   froot: arab
+  uploadfile: arab
+  proportion: 0.2
   espace: 2
   sc: 1
   pcut: 0.05
@@ -17,11 +19,11 @@ params:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE,fig.align = 'center')
+knitr::opts_chunk$set(fig.align = 'center')
 #source("helper.R")
 ```
 
-```{r, manhattan}
+```{r, manhattan,echo=FALSE}
 manhattan <- function(dataframe, colors=c("gray10", "gray50"), ymax="max", limitchromosomes=NULL, suggestiveline=-log10(1e-5), genomewideline=NULL, title="", annotate=NULL, ...) {
   
   d=dataframe
@@ -80,19 +82,15 @@ manhattan <- function(dataframe, colors=c("gray10", "gray50"), ymax="max", limit
 }
 ```
 
-
-# EigenGWAS Report {.tabset .tabset-fade .tabset-pills}
-Summary for EigenGWAS analysis.
-
+# {.tabset .tabset-fade .tabset-pills}
 ## 1 MAF
-Minor allele frequency distribution of the sample.
 ```{r, maf,echo=TRUE}
 fq=read.table(paste0(params$froot, ".frq"), as.is = T, header = T)
 hist(fq$MAF, main="MAF", xlab="Minor allele frequency", xlim=c(0, 0.5), breaks = 50)
 ```
+Minor allele frequency distribution of the sample.
 
 ## 2 Eigenanalysis
-The distribution of the top eigenvalues and the projection of the samples in the first two eigenspace.
 ```{r, pca,echo=TRUE}
 layout(matrix(1:2, 1, 2))
 pcRun = 10
@@ -105,9 +103,9 @@ abline(h=1, lty=2, col="black")
 pcF=read.table(paste0(params$froot, ".eigenvec"), as.is = T)
 plot(main="eSpace 1 vs 2", pcF[,3], pcF[,4], xlab="eSpace 1", ylab="eSpace 2", bty='n', pch=16, cex=0.5, col=ifelse(pcF[,3]<0, "red", "blue"))
 ```
+The distribution of the top-ranked eigenvalues and the projection of the samples in the first two eigenspaces.
 
 ## 3 GRM
-$n_e$ reflects the relative sample size of the sample. If the sample is random, the $n_e$ should be very close to the sample size of the data. $m_e$ is the effective number of markers for the sample, reflecting the average linkage disequilibrium between markers.
 ```{r, grm,echo=TRUE}
 layout(matrix(1:2, 1, 2))
 gz=gzfile(paste0(params$froot, ".grm.gz"))
@@ -115,7 +113,7 @@ grm=read.table(gz, as.is = T)
 offDiag = grm[grm[,1]!=grm[,2], 4]
 Ne=-1/mean(offDiag/params$sc)
 Me=1/var(offDiag/params$sc)
-hist(offDiag/params$sc, main="Pairwise relatedness ", xlab="Relatedness score", breaks = 50)
+hist(offDiag/params$sc, main="Pairwise relatedness ", xlab="Self-Relatedness", breaks = 50)
         
 nn=nrow(read.table(paste0(params$froot, ".fam"), as.is = T))
 mm=nrow(read.table(paste0(params$froot, ".bim"), as.is = T))
@@ -123,9 +121,9 @@ legend("topright", legend = c(paste0("ne=", format(Ne, digits=3, nsmall=2), ' ['
 
 hist(grm[grm[,1]==grm[,2],4]/params$sc, main="Diagonal relatedness", xlab="Relatedness score", breaks = 15)
 ```
+Relatedness score is defined as the pairwise relatedness for any pair of individuals as measured over genome-wide markers. It is often employed for the estimation for additive genetic variance, see VanRaden ([$J Dairy Sci, 2008, 91:4414-4423$](https://www.sciencedirect.com/science/article/pii/S0022030208709901)) for more details. $n_e$ is the effective sample size. If the samples are related to each other much, $n_e$ would be smaller than the real sample size (in square brackets). $m_e$ is the effective number of markers. When markers are in linkage equilibrium, $m_e$=$m$, the number of markers in study (in square brackets). Of note, when the sample has experienced, recent, strong selection, me can be very small, say less than 0.01$m$; however, it can be of demographic factors possible.
 
 ## 4 Eigenvalue vs $\lambda_{GC}$
-Eigenvalue reflects the mean of selection, and $\lambda_{GC}$ reflects the median of the selection intensity.
 ```{r, ev,echo=TRUE}
 PC=params$espace
 Evev=read.table(paste0(params$froot, ".eigenval"), as.is = T)
@@ -145,9 +143,10 @@ barplot(t(egc), beside = T, border = F, xlab="eSpace", ylim=c(0,max(egc)+2))
 legend("topright", legend = c("Eigenvalue", expression(lambda[gc])), pch=15, col=c("black", "grey"), bty='n')
 
 ```
+Eigenvalue follows a mixture distribution $\eta$$F_{st,s}$+(1-$\eta$)$F_{st,d}$, and $\lambda_{GC}$ is proportional to $F_{st,d}$. If eigenvalue is far larger than $\lambda_{GC}$, it indicates the presence of selection sweep of the sample.
 
 ## 5 EigenGWAS
-Manhhattan plot for genomic scan for eigenvectors.
+Manhattan plot and Q-Q plot for EigenGWAS scanning on the chosen eigenvector. The p-value threshold, grey line in the Manhattan plot, is set at genome-wide control for type I error rate of 0.05 (Bonferroni correction). The grey points in the Q-Q plot are for the test statistics without technical correction for genome-wide drift, and the dark ones with technical correction for genome-wide drift.
 ```{r, eGWAS, results="asis",fig.align="center",echo=TRUE}
 PC=params$espace
 froot = params$froot
@@ -204,3 +203,17 @@ knitr::kable(tophit,
 [Chen, G.B. et al, EigenGWAS: finding loci under selection through genome-wide association studies of eigenvectors in structured populations, Heredity, 2016, 117:51-61.](https://www.nature.com/articles/hdy201625)
 
 Qi, G.A. et al, EigenGWAS: An online visualizing and interactive application for detecting genomic signatures of natural selection (Under review).
+
+## 7 Logs
+```{r, logs,echo=FALSE}
+nn=nrow(read.table(paste0(params$froot, ".fam"), as.is = T))
+mm=nrow(read.table(paste0(params$froot, ".bim"), as.is = T))
+popTp = ifelse(params$sc==1,"outbred","inbred")
+cat(paste0("Input file: "),params$uploadfile)
+cat(paste0("Population type: ",popTp))
+cat(paste0("Sample size: ",nn))
+cat(paste0("Markers: ",mm))
+cat(paste0("Marker proportion for quick eigen-decomposition: ",params$proportion))
+cat(paste0("Scanned eigen spaces: ",params$espace))
+cat(paste0("Report generated at: ",Sys.time()," CHN"))
+```
