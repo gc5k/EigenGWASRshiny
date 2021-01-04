@@ -186,7 +186,7 @@ ui <- fluidPage(
                        sidebarPanel(
                          sliderInput(
                            'EigenGWASPlot_espace',
-                           "eSpace", 
+                           "Eigen Space", 
                            min = 1, max = 5, value = 1, dragRange=TRUE, step = 1),
                          width = 4
                        ),
@@ -387,7 +387,7 @@ server <- function(input, output, session) {
   
       #EigenGWAS
       for(i in 1:PC) {
-        incProgress(1/n, detail = paste0(" scanning eSpace ", i))
+        incProgress(1/n, detail = paste0(" scanning eigen space ", i))
         outRoot=paste0(froot, ".", i)
         liCmd=paste0(plink2, " --allow-no-sex --linear --bfile ", froot, " --autosome-num ", input$autosome, " --pheno ", froot, ".eigenvec --mpheno ", i," --out ", outRoot)
         system(liCmd)
@@ -426,7 +426,7 @@ server <- function(input, output, session) {
         names(evalF) = c(1:pcRun)
         barplot(evalF/sc, border = F, main="Eigenvalue",ylim = c(0,max(evalF/sc)*1.2),xlab = 'Eigenspace')
         abline(h=1, lty=2, col="black")
-        plot(main=paste0("eSpace ", input$x, " vs ", input$y), pcF[,input$x+2], pcF[,input$y+2], xlab=paste0("eSpace ", input$x), ylab=paste0("eSpace ", input$y), bty='n', pch=16, cex=0.5,
+        plot(main=paste0("Eigen space ", input$x, " vs ", input$y), pcF[,input$x+2], pcF[,input$y+2], xlab=paste0("Eigen space ", input$x), ylab=paste0("Eigen space ", input$y), bty='n', pch=16, cex=0.5,
              col=ifelse(pcF[,3]<0, "red", "blue"))
         abline(v=0, h=0, col="grey", lty=2)
       })
@@ -438,6 +438,7 @@ server <- function(input, output, session) {
         grm=read.table(gz, as.is = T)
 
         off_diagnol = grm[grm[,1]!=grm[,2], 4]
+        
         Ne=-1/mean(off_diagnol/sc)
         Me=1/var(off_diagnol/sc)
 
@@ -468,7 +469,7 @@ server <- function(input, output, session) {
         
         egc=matrix(c(Evev[1:PC,1]/sc, GC), PC, 2, byrow = F)
         rownames(egc)=seq(1, PC)
-        barplot(t(egc), beside = T, border = F, xlab="eSpace", ylim=c(0,max(egc)+2))
+        barplot(t(egc), beside = T, border = F, xlab="Eigen Space", ylim=c(0,max(egc)+2))
         abline(h=1, lty=2, lwd=2)
         legend("topright", legend = c("Eigenvalue", expression(paste(lambda[gc]))), pch=15, col=c("black", "grey"), bty='n')
       })
@@ -481,20 +482,9 @@ server <- function(input, output, session) {
       
       pcIdx=input$EigenGWASPlot_espace[1]
       if (pcIdx > input$espace) {
-        showNotification(paste0("eSpace ", pcIdx, " hasn't been scanned yet."), type = "warning")
+        showNotification(paste0("Eigen space ", pcIdx, " hasn't been scanned yet."), type = "warning")
         return()
       }
-      
-      egResF=paste0(froot, ".",pcIdx, ".assoc.linear")
-      EigenRes=read.table(egResF, as.is = T, header = T)
-      EigenRes=EigenRes[which(!is.na(EigenRes$P)),]
-      EigenRes$Praw=EigenRes$P
-      gc=qchisq(median(EigenRes$P, na.rm = T), 1, lower.tail = F)/qchisq(0.5, 1, lower.tail = F)
-      print(paste0("GC = ", format(gc, digits = 4)))
-      EigenRes$P=pchisq((EigenRes$STAT)^2/gc, 1, lower.tail = F)
-      EigenRes_sig = EigenRes[EigenRes$P<=0.05,]
-      EigenRes_no_sig = EigenRes[EigenRes$P>0.05,]
-      EigenRes_com = rbind(EigenRes_sig,EigenRes_no_sig[sample(1:nrow(EigenRes_no_sig),0.6*nrow(EigenRes_no_sig)),])
       
       output$eigengwas <- renderImage({
         width = session$clientData$output_eigengwas_width
@@ -502,12 +492,23 @@ server <- function(input, output, session) {
         pcIdx=input$EigenGWASPlot_espace[1]
         print(paste0("ePC ", pcIdx))
         if (pcIdx > input$espace) {
-          showNotification(paste0("eSpace ", pcIdx, " hasn't been scanned yet."), type = "warning")
+          showNotification(paste0("Eigen space ", pcIdx, " hasn't been scanned yet."), type = "warning")
           return()
         }
         
+        egResF=paste0(froot, ".",pcIdx, ".assoc.linear")
+        EigenRes<-read.table(egResF, as.is = T, header = T)
+        EigenRes<-EigenRes[which(!is.na(EigenRes$P)),]
+        EigenRes$Praw<-EigenRes$P
+        gc<-qchisq(median(EigenRes$P, na.rm = T), 1, lower.tail = F)/qchisq(0.5, 1, lower.tail = F)
+        print(paste0("GC = ", format(gc, digits = 4)))
+        EigenRes$P<-pchisq((EigenRes$STAT)^2/gc, 1, lower.tail = F)
+        EigenRes_sig <- EigenRes[EigenRes$P<=0.05,]
+        EigenRes_no_sig <- EigenRes[EigenRes$P>0.05,]
+        EigenRes_com <- rbind(EigenRes_sig,EigenRes_no_sig[sample(1:nrow(EigenRes_no_sig),0.6*nrow(EigenRes_no_sig)),])
+        
         png(filename = paste0(tempdir(),'/EgE',pcIdx,'.png'),width = width,height = height)
-        manhattan(EigenRes_com, genomewideline = -log10(0.05/nrow(EigenRes)), title=paste("eSpace ", pcIdx), annotatePvalue = NULL, pch=16, cex=0.3, bty='n')
+        manhattan(EigenRes_com, genomewideline = -log10(0.05/nrow(EigenRes)), title=paste("Eigen space ", pcIdx), annotatePvalue = NULL, pch=16, cex=0.3, bty='n')
         dev.off()
         
         output_dt = EigenRes[order(EigenRes$P),][c(1:10),c(1:3,9,10)]
@@ -516,7 +517,7 @@ server <- function(input, output, session) {
           DT::datatable(
             output_dt,
             caption = htmltools::tags$caption(
-              style = 'caption-side:bottom;text-align:center;','Table: ',htmltools::em(paste0('Top hits in EigenGWAS, eSpace',pcIdx,", download full results for more details"))),
+              style = 'caption-side:bottom;text-align:center;','Table: ',htmltools::em(paste0('Top hits in EigenGWAS, eigen space',pcIdx,", download full results for more details"))),
             options = list(pageLength = 5, 
                            searching = FALSE, 
                            dom = ''
@@ -545,10 +546,20 @@ server <- function(input, output, session) {
         height = session$clientData$output_qqplot_height
         pcIdx=input$EigenGWASPlot_espace[1]
         if (pcIdx > input$espace) {
-          showNotification(paste0("eSpace ", pcIdx, " hasn't been scanned yet."), type = "warning")
+          showNotification(paste0("Eigen space ", pcIdx, " hasn't been scanned yet."), type = "warning")
           return()
         }
 
+        egResF=paste0(froot, ".",pcIdx, ".assoc.linear")
+        EigenRes<-read.table(egResF, as.is = T, header = T)
+        EigenRes<-EigenRes[which(!is.na(EigenRes$P)),]
+        EigenRes$Praw<-EigenRes$P
+        gc<-qchisq(median(EigenRes$P, na.rm = T), 1, lower.tail = F)/qchisq(0.5, 1, lower.tail = F)
+        print(paste0("GC = ", format(gc, digits = 4)))
+        EigenRes$P<-pchisq((EigenRes$STAT)^2/gc, 1, lower.tail = F)
+        EigenRes_sig <- EigenRes[EigenRes$P<=0.05,]
+        EigenRes_no_sig <- EigenRes[EigenRes$P>0.05,]
+        EigenRes_com <- rbind(EigenRes_sig,EigenRes_no_sig[sample(1:nrow(EigenRes_no_sig),0.6*nrow(EigenRes_no_sig)),])
         #QQplot
         chiseq=qchisq(seq(1/nrow(EigenRes_com), 1-1/nrow(EigenRes_com), length.out = nrow(EigenRes_com)), 1)
         png(filename = paste0(tempdir(),'/QQE',pcIdx,'.png'),width = width, height = height)
