@@ -201,8 +201,7 @@ knitr::kable(tophit,
 
 ## 6 Citation
 [Chen, G.B. et al, EigenGWAS: finding loci under selection through genome-wide association studies of eigenvectors in structured populations, Heredity, 2016, 117:51-61.](https://www.nature.com/articles/hdy201625)
-
-Qi, G.A. et al, EigenGWAS: An online visualizing and interactive application for detecting genomic signatures of natural selection (Under review).
+[Guo-An Qi et al, EigenGWAS: An online visualizing and interactive application for detecting genomic signatures of natural selection, Molecular Ecology Resources, 2021, 00:1-13.](https://onlinelibrary.wiley.com/doi/10.1111/1755-0998.13370)
 
 ## 7 Logs
 ```{r, logs,echo=FALSE}
@@ -213,7 +212,7 @@ cat(paste0("Input file: "),params$uploadfile)
 cat(paste0("Population type: ",popTp))
 cat(paste0("Sample size: ",nn))
 cat(paste0("Markers: ",mm))
-cat(paste0("Marker proportion for quick eigen-decomposition: ",params$proportion))
+cat(paste0("Marker proportion for quick eigen-decomposition: ",params$proportion*100,"%"))
 cat(paste0("Scanned eigen spaces: ",params$espace))
 cat(paste0("Report generated at: ",Sys.time()," CHN"))
 ```

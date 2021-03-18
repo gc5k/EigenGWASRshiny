@@ -274,9 +274,9 @@ ui <- fluidPage(
       tags$p(HTML("<a href=\"https://github.com/gc5k/GEAR\" target=\"_blank\">GitHub repository: GEAR.</a>")),
       tags$br(),
       tags$h3("Citation"),
-      tags$p(HTML("<a href=\"https://www.nature.com/articles/hdy201625\" target=\"_blank\">Chen, G.B. et al, EigenGWAS: finding loci under selection through genome-wide association studies of eigenvectors in structured populations, Heredity, 2016, 117:51-61.</a>")),
+      tags$p(HTML("<a href=\"https://www.nature.com/articles/hdy201625\" target=\"_blank\">Chen, G.B. et al, EigenGWAS: finding loci under selection through genome-wide association studies of eigenvectors in structured populations, <i>Heredity</i>, 2016, <i>117</i>:51-61.</a>")),
       tags$br(),
-      tags$p(HTML("<a>Qi, G.A. et al, EigenGWAS: An online visualizing and interactive application for detecting genomic signatures of natural selection (Under review).</a>")),
+      tags$p(HTML("<a href=\"https://onlinelibrary.wiley.com/doi/full/10.1111/1755-0998.13370\" target=\"_blank\">Guo-An Qi et al, EigenGWAS: An online visualizing and interactive application for detecting genomic signatures of natural selection, <i>Molecular Ecology Resource</i>, 2021, <i>00</i>:1-13.</a>")),
       tags$br(),
       tags$p(HTML(paste("Git version:", gTag[1,1])))
       
@@ -442,7 +442,10 @@ server <- function(input, output, session) {
         Ne=-1/mean(off_diagnol/sc)
         Me=1/var(off_diagnol/sc)
 
-        hist(off_diagnol/sc, main="Pairwise relatedness", xlab="Relatedness score", breaks = 50)
+        hist(off_diagnol/sc, main="Pairwise relatedness", xlab="Relatedness score", breaks = 50,freq = F)
+        x=seq(range(off_diagnol/sc)[1],range(off_diagnol/sc)[2],length.out = 100)
+        y=dnorm(x,-1/nn,sqrt(1/Me))
+        lines(x,y,col="red",lwd=2)
         
         Ne=format(Ne, digits=3, nsmall=2)
         Me=format(Me, digits=3, nsmall=2)
@@ -461,6 +464,7 @@ server <- function(input, output, session) {
       incProgress(1/n, detail = paste0(" Eigenvalue plot ... "))
       output$eigenvalue <- renderPlot({
         Evev=read.table(paste0(froot, ".eigenval"), as.is = T)
+        print(head(Evev))
         GC=array(0, dim=PC)
         for(i in 1:PC) {
           eg = read.table(paste0(froot, ".", i, ".assoc.linear"), as.is = T, header = T)
