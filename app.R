@@ -329,7 +329,7 @@ server <- function(input, output, session) {
     }
     
     froot = substr(input$file_input$datapath[idx], 1, nchar(input$file_input$datapath[idx])-4)
-    get_chr = strsplit(readLines(paste0(froot,'.bim'),n = 1),'\t')[[1]][1]
+    get_chr = strsplit(readLines(paste0(froot,'.bim'),n = 1),' ')[[1]][1]
     check_numeric = is.numeric(as.numeric(get_chr))
     if (is.na(as.numeric(get_chr)) | !check_numeric){
       showNotification("The chromosome index in the .bim file must be numeric!", duration = 5, type="error")
