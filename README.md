@@ -1,7 +1,9 @@
 # EigenGWAS Shiny
-The core algorithm of this online platform is implemented in efficient C language and provides a simple and interactive user-friendly interface using R shiny framework.
-Online tool is now available at www.eigengwas.com.
-You can easily deploy EigenGWAS directly at you PC/sever by the followings.
+The core algorithm of this online platform is implemented in efficient C language and provides a simple and interactive user-friendly interface using R shiny framework.  
+
+Online tool is now available at www.eigengwas.com.  
+
+You can easily deploy EigenGWAS directly at you PC/sever by the followings.  
 ###   -Download the source codes of EigenGWAS Shiny
 Find the download link at the homepage **Code** button or **Releases** panel, download the zipped source codes.
 ###   -Unzip the source codes locally
